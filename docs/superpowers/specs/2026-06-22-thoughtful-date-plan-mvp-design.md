@@ -32,7 +32,7 @@ Example copy:
 - Swift
 - SwiftUI
 - CoreLocation for current location
-- CLGeocoder for approximate location labels
+- CLGeocoder for editable approximate area labels
 - MapKit / Apple Maps URLs for directions
 - StoreKit for in-app purchase
 - URLSession for backend calls
@@ -48,16 +48,18 @@ Example copy:
 
 The input screen collects:
 
-- Current location
+- Current location with editable "Plan near" area
 - Budget tier: `$`, `$$`, `$$$`
 - Vibe chip: cozy, adventurous, romantic, low-key, foodie, outdoorsy
 - No drinking toggle
 - Date duration: 1.5 hours, 2 hours, 3 hours, 4 hours
 - Optional free-text field: "What does she like?"
 
-If current location is denied or unavailable, the app shows a fallback city/neighborhood text input.
+If current location is allowed, the app reverse-geocodes it into the most specific friendly area label available. Prefer neighborhood-level values from `subLocality` when available, then city-level values from `locality`, then broader region values as a fallback.
 
-The app sends only an approximate location label to the backend, such as "Williamsburg, Brooklyn" or "Austin, TX". It does not send raw latitude/longitude in the MVP.
+The input screen shows the detected area in an editable "Plan near" field, such as "Williamsburg, Brooklyn", "SoHo", "near Central Park", or "Austin, TX". If current location is denied or unavailable, the same field becomes the manual city/neighborhood fallback.
+
+The app sends only this editable approximate area label to the backend. It does not send raw latitude/longitude in the MVP.
 
 ## Generated Plan
 
@@ -137,16 +139,17 @@ Unlock state is stored locally on-device for the MVP. Accounts and cross-device 
 
 1. User opens the app and enters date-planning inputs.
 2. App requests current location.
-3. App reverse-geocodes the location into an approximate label.
-4. App sends inputs to the Cloudflare Worker.
-5. Worker generates both an anonymized preview and locked exact plan.
-6. App shows the preview.
-7. User can regenerate previews for free.
-8. User taps unlock.
-9. StoreKit presents the purchase flow for Unlock 1 Thoughtful Date Plan.
-10. Successful purchase unlocks the exact plan locally.
-11. User can open each stop in Apple Maps.
-12. User gets one exact-plan regenerate after unlock.
+3. App reverse-geocodes the location into the most specific friendly area label available.
+4. App shows the area in an editable "Plan near" field.
+5. App sends inputs to the Cloudflare Worker.
+6. Worker generates both an anonymized preview and locked exact plan.
+7. App shows the preview.
+8. User can regenerate previews for free.
+9. User taps unlock.
+10. StoreKit presents the purchase flow for Unlock 1 Thoughtful Date Plan.
+11. Successful purchase unlocks the exact plan locally.
+12. User can open each stop in Apple Maps.
+13. User gets one exact-plan regenerate after unlock.
 
 ## Backend API
 
@@ -225,6 +228,8 @@ Response body:
 
 The final schema must require exactly 3 preview stops and exactly 3 locked stops.
 
+The generation prompt must treat `locationLabel` as the planning area, not the entire metro region. It should prefer stops that are close to that area and close enough to each other for a short walk or short rideshare. The MVP does not include a map picker, custom radius, or full route optimization.
+
 ## OpenAI Reliability Pattern
 
 The Worker avoids relying on raw JSON text for the final plan response.
@@ -244,6 +249,7 @@ This replaces the simpler "retry malformed JSON once" behavior. A failed generat
 
 - If location permission is denied, show manual city/neighborhood input.
 - If reverse geocoding fails, use the nearest city/region label if available.
+- If the detected area looks too broad, the user can edit the "Plan near" field before generation.
 - If the Worker fails, show a retry state without charging.
 - If OpenAI cannot produce a valid schema after the recovery loop, return a retryable error.
 - If purchase fails or is cancelled, keep the user on the locked preview.
@@ -277,6 +283,8 @@ Automated checks:
 Manual checks:
 
 - Location permission happy path.
+- Neighborhood-level "Plan near" field is populated when reverse geocoding provides it.
+- User can edit the "Plan near" field before generation.
 - Denied-location fallback.
 - Generate preview.
 - Preview regenerate.
@@ -288,7 +296,7 @@ Manual checks:
 
 ## Success Criteria
 
-- User can generate an anonymized preview from current or typed location.
+- User can generate an anonymized preview from current, edited, or typed location area.
 - Preview proves relevance without leaking exact venue names.
 - User can pay $4.99 through StoreKit to unlock the exact plan.
 - Unlocked plan includes 3 stops, timing, reasons, estimated cost, and Apple Maps actions.
