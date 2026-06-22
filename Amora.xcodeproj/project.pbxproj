@@ -16,6 +16,8 @@
 		A10000000000000000000007 /* DatePlanClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* DatePlanClientTests.swift */; };
 		A10000000000000000000008 /* LocationLabelService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* LocationLabelService.swift */; };
 		A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* LocationLabelServiceTests.swift */; };
+		A10000000000000000000010 /* PlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* PlanViewModel.swift */; };
+		A10000000000000000000011 /* PlanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* PlanViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,6 +43,8 @@
 		A20000000000000000000010 /* DatePlanClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePlanClientTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* LocationLabelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationLabelService.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* LocationLabelServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationLabelServiceTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* PlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViewModel.swift; sourceTree = "<group>"; };
+		A20000000000000000000014 /* PlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +71,7 @@
 				A40000000000000000000003 /* Config */,
 				A40000000000000000000004 /* Models */,
 				A40000000000000000000008 /* Services */,
+				A40000000000000000000009 /* ViewModels */,
 			);
 			path = Amora;
 			sourceTree = "<group>";
@@ -93,6 +98,7 @@
 				A20000000000000000000005 /* DatePlanModelsTests.swift */,
 				A20000000000000000000010 /* DatePlanClientTests.swift */,
 				A20000000000000000000012 /* LocationLabelServiceTests.swift */,
+				A20000000000000000000014 /* PlanViewModelTests.swift */,
 			);
 			path = AmoraTests;
 			sourceTree = "<group>";
@@ -121,6 +127,14 @@
 				A20000000000000000000011 /* LocationLabelService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000009 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000013 /* PlanViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -215,6 +229,7 @@
 				A10000000000000000000004 /* DatePlanModels.swift in Sources */,
 				A10000000000000000000006 /* DatePlanClient.swift in Sources */,
 				A10000000000000000000008 /* LocationLabelService.swift in Sources */,
+				A10000000000000000000010 /* PlanViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +240,7 @@
 				A10000000000000000000005 /* DatePlanModelsTests.swift in Sources */,
 				A10000000000000000000007 /* DatePlanClientTests.swift in Sources */,
 				A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */,
+				A10000000000000000000011 /* PlanViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
