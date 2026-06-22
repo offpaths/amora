@@ -79,6 +79,7 @@ describe("POST /generate-plan", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(validPlan);
     expect(generateDatePlan).toHaveBeenCalledWith(validRequest, { OPENAI_API_KEY: "test-key" });
+    expectCorsHeaders(response);
   });
 
   it("rejects invalid request bodies", async () => {
@@ -93,6 +94,48 @@ describe("POST /generate-plan", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
+  });
+
+  it("rejects invalid JSON", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: "{",
+        headers: { "content-type": "application/json" }
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_json" });
+  });
+
+  it("returns a retryable error when generation fails", async () => {
+    vi.mocked(generateDatePlan).mockRejectedValueOnce(new Error("generation failed"));
+
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(validRequest),
+        headers: { "content-type": "application/json" }
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: "generation_failed", retryable: true });
+  });
+
+  it("returns not found for non-POST methods", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "GET"
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
   });
 });
 
@@ -121,3 +164,9 @@ describe("OPTIONS /generate-plan", () => {
     await expect(response.json()).resolves.toEqual({ error: "not_found" });
   });
 });
+
+function expectCorsHeaders(response: Response): void {
+  expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  expect(response.headers.get("access-control-allow-methods")).toBe("POST, OPTIONS");
+  expect(response.headers.get("access-control-allow-headers")).toBe("content-type");
+}
