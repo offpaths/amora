@@ -19,6 +19,11 @@
 		A10000000000000000000010 /* PlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* PlanViewModel.swift */; };
 		A10000000000000000000011 /* PlanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* PlanViewModelTests.swift */; };
 		A10000000000000000000012 /* PurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* PurchaseService.swift */; };
+		A10000000000000000000013 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* Components.swift */; };
+		A10000000000000000000014 /* InputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* InputView.swift */; };
+		A10000000000000000000015 /* PreviewPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* PreviewPlanView.swift */; };
+		A10000000000000000000016 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* PaywallView.swift */; };
+		A10000000000000000000017 /* UnlockedPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* UnlockedPlanView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +52,11 @@
 		A20000000000000000000013 /* PlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViewModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* PlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViewModelTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* PurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseService.swift; sourceTree = "<group>"; };
+		A20000000000000000000016 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* InputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputView.swift; sourceTree = "<group>"; };
+		A20000000000000000000018 /* PreviewPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPlanView.swift; sourceTree = "<group>"; };
+		A20000000000000000000019 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* UnlockedPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockedPlanView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +84,7 @@
 				A40000000000000000000004 /* Models */,
 				A40000000000000000000008 /* Services */,
 				A40000000000000000000009 /* ViewModels */,
+				A40000000000000000000010 /* Views */,
 			);
 			path = Amora;
 			sourceTree = "<group>";
@@ -138,6 +149,18 @@
 				A20000000000000000000013 /* PlanViewModel.swift */,
 			);
 			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000010 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000016 /* Components.swift */,
+				A20000000000000000000017 /* InputView.swift */,
+				A20000000000000000000018 /* PreviewPlanView.swift */,
+				A20000000000000000000019 /* PaywallView.swift */,
+				A20000000000000000000020 /* UnlockedPlanView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -234,6 +257,11 @@
 				A10000000000000000000008 /* LocationLabelService.swift in Sources */,
 				A10000000000000000000010 /* PlanViewModel.swift in Sources */,
 				A10000000000000000000012 /* PurchaseService.swift in Sources */,
+				A10000000000000000000013 /* Components.swift in Sources */,
+				A10000000000000000000014 /* InputView.swift in Sources */,
+				A10000000000000000000015 /* PreviewPlanView.swift in Sources */,
+				A10000000000000000000016 /* PaywallView.swift in Sources */,
+				A10000000000000000000017 /* UnlockedPlanView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,6 +316,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Amora/Preview Content\"";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Amora uses your location to suggest a nearby planning area.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -310,6 +339,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Amora/Preview Content\"";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Amora uses your location to suggest a nearby planning area.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
