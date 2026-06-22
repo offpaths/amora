@@ -47,6 +47,12 @@ final class PlanViewModel: ObservableObject {
         remainingUnlockedRegenerates = 1
     }
 
+    func completePurchase(success: Bool) {
+        if success {
+            unlockCurrentPlan()
+        }
+    }
+
     func regenerateUnlockedPlan() async {
         guard canRegenerateUnlockedPlan else { return }
         remainingUnlockedRegenerates -= 1

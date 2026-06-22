@@ -18,6 +18,7 @@
 		A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* LocationLabelServiceTests.swift */; };
 		A10000000000000000000010 /* PlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* PlanViewModel.swift */; };
 		A10000000000000000000011 /* PlanViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* PlanViewModelTests.swift */; };
+		A10000000000000000000012 /* PurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* PurchaseService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +46,7 @@
 		A20000000000000000000012 /* LocationLabelServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationLabelServiceTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* PlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViewModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* PlanViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanViewModelTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* PurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +127,7 @@
 			children = (
 				A20000000000000000000009 /* DatePlanClient.swift */,
 				A20000000000000000000011 /* LocationLabelService.swift */,
+				A20000000000000000000015 /* PurchaseService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -230,6 +233,7 @@
 				A10000000000000000000006 /* DatePlanClient.swift in Sources */,
 				A10000000000000000000008 /* LocationLabelService.swift in Sources */,
 				A10000000000000000000010 /* PlanViewModel.swift in Sources */,
+				A10000000000000000000012 /* PurchaseService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
