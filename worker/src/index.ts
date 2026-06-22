@@ -5,11 +5,18 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return json({}, 204);
+    if (url.pathname !== "/generate-plan") {
+      return json({ error: "not_found" }, 404);
     }
 
-    if (request.method !== "POST" || url.pathname !== "/generate-plan") {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders()
+      });
+    }
+
+    if (request.method !== "POST") {
       return json({ error: "not_found" }, 404);
     }
 
@@ -39,9 +46,15 @@ function json(body: unknown, status: number): Response {
     status,
     headers: {
       "content-type": "application/json",
-      "access-control-allow-origin": "*",
-      "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type"
+      ...corsHeaders()
     }
   });
+}
+
+function corsHeaders(): Record<string, string> {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-headers": "content-type"
+  };
 }

@@ -89,3 +89,29 @@ describe("POST /generate-plan", () => {
     await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
   });
 });
+
+describe("OPTIONS /generate-plan", () => {
+  it("returns 204 for the generate-plan route", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "OPTIONS"
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(response.status).toBe(204);
+    await expect(response.text()).resolves.toBe("");
+  });
+
+  it("returns not found for other routes", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/anything", {
+        method: "OPTIONS"
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+});
