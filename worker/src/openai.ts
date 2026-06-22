@@ -43,7 +43,15 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     `Duration: ${input.durationMinutes} minutes.`,
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,
     `Partner likes: ${input.partnerLikes || "not provided"}.`,
+    "Schema contract:",
+    "id: string",
+    "preview.title: string",
+    "preview.summaryBadges: string[]",
+    "preview.stops: exactly 3 objects with order 1, 2, 3 and concept",
+    "lockedPlan.totalEstimatedCost: string",
+    "lockedPlan.stops: exactly 3 objects with order 1, 2, 3, venueName, address, appleMapsQuery, durationMinutes, reason, estimatedCost",
     "Do not include current events. Do not reveal exact venues in preview concepts.",
+    "No markdown. No prose outside JSON.",
     "Return exactly 3 preview stops and exactly 3 locked stops."
   ].join("\n");
 }
@@ -67,9 +75,16 @@ function extractJsonCandidate(payload: unknown): unknown {
           continue;
         }
 
-        for (const part of content) {
-          if (typeof part === "object" && part !== null && "text" in part) {
-            return JSON.parse(String((part as { text: unknown }).text));
+        const textParts = content.filter(hasText);
+        const orderedTextParts = [
+          ...textParts.filter((part) => part.type === "output_text"),
+          ...textParts.filter((part) => part.type !== "output_text")
+        ];
+
+        for (const part of orderedTextParts) {
+          const candidate = parseJsonCandidate(String(part.text));
+          if (candidate !== undefined) {
+            return candidate;
           }
         }
       }
@@ -77,4 +92,16 @@ function extractJsonCandidate(payload: unknown): unknown {
   }
 
   throw new Error("No JSON candidate found in OpenAI response");
+}
+
+function hasText(part: unknown): part is { type?: unknown; text: unknown } {
+  return typeof part === "object" && part !== null && "text" in part;
+}
+
+function parseJsonCandidate(text: string): unknown | undefined {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
 }

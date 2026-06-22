@@ -104,7 +104,36 @@ describe("generateDatePlan", () => {
     expect(body.input).toContain("Budget tier: $$.");
     expect(body.input).toContain("No drinking: yes, avoid alcohol-centered stops.");
     expect(body.input).toContain("Partner likes: bookstores, matcha, quiet places.");
+    expect(body.input).toContain("Schema contract:");
+    expect(body.input).toContain("id: string");
+    expect(body.input).toContain("preview.title: string");
+    expect(body.input).toContain("preview.summaryBadges: string[]");
+    expect(body.input).toContain("preview.stops: exactly 3 objects with order 1, 2, 3 and concept");
+    expect(body.input).toContain("lockedPlan.totalEstimatedCost: string");
+    expect(body.input).toContain(
+      "lockedPlan.stops: exactly 3 objects with order 1, 2, 3, venueName, address, appleMapsQuery, durationMinutes, reason, estimatedCost"
+    );
+    expect(body.input).toContain("No markdown. No prose outside JSON.");
     expect(body.input).toContain("Return exactly 3 preview stops and exactly 3 locked stops.");
+  });
+
+  it("continues scanning raw text candidates until it finds valid output JSON", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        output: [
+          {
+            type: "message",
+            content: [
+              { type: "text", text: "not json" },
+              { type: "output_text", text: JSON.stringify(validPlan) }
+            ]
+          }
+        ]
+      })
+    );
+
+    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
   });
 
   it("keeps output_text fallback compatibility", async () => {

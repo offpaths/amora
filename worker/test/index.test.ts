@@ -150,6 +150,7 @@ describe("OPTIONS /generate-plan", () => {
 
     expect(response.status).toBe(204);
     await expect(response.text()).resolves.toBe("");
+    expectCorsHeaders(response);
   });
 
   it("returns not found for other routes", async () => {
