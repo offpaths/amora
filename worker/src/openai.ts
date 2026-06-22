@@ -9,7 +9,11 @@ export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Pr
     throw new Error("OPENAI_API_KEY is not configured");
   }
 
-  const prompt = buildPrompt(input);
+  const initialPrompt = buildPrompt(input);
+  return runRecoveryLoop(initialPrompt, (prompt) => callOpenAIForCandidate(prompt, env));
+}
+
+async function callOpenAIForCandidate(prompt: string, env: Env): Promise<unknown> {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -31,10 +35,62 @@ export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Pr
   return extractDatePlanCandidate(payload);
 }
 
+export async function runRecoveryLoop(
+  initialPrompt: string,
+  generateCandidate: (prompt: string) => Promise<unknown>
+): Promise<DatePlanResponse> {
+  let prompt = initialPrompt;
+  let lastError = "invalid_plan_schema";
+
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    let candidate: unknown;
+    try {
+      candidate = await generateCandidate(prompt);
+    } catch (error) {
+      if (!isRecoverableGenerationError(error)) {
+        throw error;
+      }
+      lastError = error instanceof Error ? error.message : "invalid_plan_schema";
+      prompt = buildRecoveryPrompt(initialPrompt, lastError);
+      continue;
+    }
+
+    try {
+      return parsePlanCandidate(candidate);
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "invalid_plan_schema";
+      prompt = buildRecoveryPrompt(initialPrompt, lastError);
+    }
+  }
+
+  throw new Error(lastError);
+}
+
+export function parsePlanCandidate(candidate: unknown): DatePlanResponse {
+  const parsed = DatePlanResponseSchema.safeParse(candidate);
+  if (parsed.success) {
+    return parsed.data;
+  }
+  throw new Error("invalid_plan_schema");
+}
+
+export function buildRecoveryPrompt(originalPrompt: string, validationError: string): string {
+  return [
+    originalPrompt,
+    "",
+    "The previous response failed schema validation.",
+    `Validation error: ${validationError}`,
+    "Correct the response and return a complete valid plan with exactly 3 preview stops and exactly 3 locked stops.",
+    "Keep the same JSON schema contract. No markdown. No prose outside JSON."
+  ].join("\n");
+}
+
 export function buildPrompt(input: GeneratePlanRequest): string {
   return [
     "Generate a premium date plan for Amora.",
     "Return only valid JSON matching the required plan schema.",
+    "If validation feedback is provided, correct the response and try again.",
+    "Maximum recovery steps are handled by the server; keep each attempt concise.",
     `Planning area: ${input.locationLabel}. Treat this as the planning area, not the whole metro region.`,
     "Prefer stops close to this area and close enough for a short walk or short rideshare.",
     `Budget tier: ${input.budgetTier}.`,
@@ -102,6 +158,10 @@ function extractDatePlanCandidate(payload: unknown): DatePlanResponse {
   }
 
   throw new Error("No JSON candidate found in OpenAI response");
+}
+
+function isRecoverableGenerationError(error: unknown): boolean {
+  return error instanceof Error && error.message === "No JSON candidate found in OpenAI response";
 }
 
 function hasText(part: unknown): part is { type?: unknown; text: unknown } {

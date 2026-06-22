@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { generateDatePlan } from "../src/openai";
+import { buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
 import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
@@ -243,8 +243,8 @@ describe("generateDatePlan", () => {
 
   it("rejects generated plans that do not match the schema", async () => {
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce(
-      jsonResponse({
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse({
         output: [
           {
             type: "message",
@@ -262,10 +262,92 @@ describe("generateDatePlan", () => {
             ]
           }
         ]
-      })
+      }))
     );
 
     await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).rejects.toThrow();
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
+
+  it("recovers after a schema-invalid OpenAI response", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output: [
+            {
+              type: "message",
+              content: [
+                {
+                  type: "output_text",
+                  text: JSON.stringify({
+                    ...validPlan,
+                    preview: {
+                      ...validPlan.preview,
+                      stops: validPlan.preview.stops.slice(0, 2)
+                    }
+                  })
+                }
+              ]
+            }
+          ]
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse(rawOpenAIResponse));
+
+    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const secondBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
+    expect(secondBody.input).toContain("The previous response failed schema validation.");
+    expect(secondBody.input).toContain("Validation error: No JSON candidate found in OpenAI response");
+  });
+});
+
+describe("parsePlanCandidate", () => {
+  it("accepts a valid candidate", () => {
+    expect(parsePlanCandidate(validPlan)).toEqual(validPlan);
+  });
+
+  it("throws for invalid candidates", () => {
+    expect(() => parsePlanCandidate({ ...validPlan, lockedPlan: { stops: [] } })).toThrow("invalid_plan_schema");
+  });
+});
+
+describe("buildRecoveryPrompt", () => {
+  it("includes validation feedback and the original prompt", () => {
+    const prompt = buildRecoveryPrompt("original prompt", "lockedPlan.stops must contain 3 items");
+
+    expect(prompt).toContain("original prompt");
+    expect(prompt).toContain("lockedPlan.stops must contain 3 items");
+    expect(prompt).toContain("The previous response failed schema validation.");
+  });
+});
+
+describe("runRecoveryLoop", () => {
+  it("returns a valid plan after an invalid attempt", async () => {
+    let calls = 0;
+
+    const result = await runRecoveryLoop("original prompt", async () => {
+      calls += 1;
+      return calls === 1 ? { ...validPlan, lockedPlan: { stops: [] } } : validPlan;
+    });
+
+    expect(result).toEqual(validPlan);
+    expect(calls).toBe(2);
+  });
+
+  it("stops after 5 invalid attempts", async () => {
+    let calls = 0;
+
+    await expect(
+      runRecoveryLoop("original prompt", async () => {
+        calls += 1;
+        return { ...validPlan, lockedPlan: { stops: [] } };
+      })
+    ).rejects.toThrow("invalid_plan_schema");
+
+    expect(calls).toBe(5);
   });
 });
 
