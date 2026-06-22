@@ -56,7 +56,8 @@ export function buildPrompt(input: GeneratePlanRequest): string {
 }
 
 function extractDatePlanCandidate(payload: unknown): DatePlanResponse {
-  const candidates: string[] = [];
+  const rawOutputTextCandidates: string[] = [];
+  const rawOtherTextCandidates: string[] = [];
 
   if (typeof payload === "object" && payload !== null && "output" in payload) {
     const output = (payload as { output: unknown }).output;
@@ -71,18 +72,18 @@ function extractDatePlanCandidate(payload: unknown): DatePlanResponse {
           continue;
         }
 
-        const textParts = content.filter(hasText);
-        const orderedTextParts = [
-          ...textParts.filter((part) => part.type === "output_text"),
-          ...textParts.filter((part) => part.type !== "output_text")
-        ];
-
-        for (const part of orderedTextParts) {
-          candidates.push(String(part.text));
+        for (const part of content.filter(hasText)) {
+          if (part.type === "output_text") {
+            rawOutputTextCandidates.push(String(part.text));
+          } else {
+            rawOtherTextCandidates.push(String(part.text));
+          }
         }
       }
     }
   }
+
+  const candidates = [...rawOutputTextCandidates, ...rawOtherTextCandidates];
 
   if (typeof payload === "object" && payload !== null && "output_text" in payload) {
     candidates.push(String((payload as { output_text: unknown }).output_text));

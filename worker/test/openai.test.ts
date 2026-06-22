@@ -56,6 +56,15 @@ const validPlan: DatePlanResponse = {
   }
 };
 
+const alternateValidPlan: DatePlanResponse = {
+  ...validPlan,
+  id: "plan_test_456",
+  preview: {
+    ...validPlan.preview,
+    title: "A romantic 2-hour plan near Williamsburg"
+  }
+};
+
 const rawOpenAIResponse = {
   output: [
     {
@@ -181,6 +190,30 @@ describe("generateDatePlan", () => {
     );
 
     await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+  });
+
+  it("prefers raw output_text candidates across all output items", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        output: [
+          {
+            type: "message",
+            content: [
+              { type: "text", text: JSON.stringify(validPlan) }
+            ]
+          },
+          {
+            type: "message",
+            content: [
+              { type: "output_text", text: JSON.stringify(alternateValidPlan) }
+            ]
+          }
+        ]
+      })
+    );
+
+    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(alternateValidPlan);
   });
 
   it("keeps output_text fallback compatibility", async () => {
