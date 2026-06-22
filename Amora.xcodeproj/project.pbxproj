@@ -14,6 +14,8 @@
 		A10000000000000000000005 /* DatePlanModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* DatePlanModelsTests.swift */; };
 		A10000000000000000000006 /* DatePlanClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* DatePlanClient.swift */; };
 		A10000000000000000000007 /* DatePlanClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* DatePlanClientTests.swift */; };
+		A10000000000000000000008 /* LocationLabelService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* LocationLabelService.swift */; };
+		A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* LocationLabelServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +39,8 @@
 		A20000000000000000000008 /* Amora.storekit */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Amora.storekit; sourceTree = "<group>"; };
 		A20000000000000000000009 /* DatePlanClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePlanClient.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* DatePlanClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePlanClientTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* LocationLabelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationLabelService.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* LocationLabelServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationLabelServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +92,7 @@
 			children = (
 				A20000000000000000000005 /* DatePlanModelsTests.swift */,
 				A20000000000000000000010 /* DatePlanClientTests.swift */,
+				A20000000000000000000012 /* LocationLabelServiceTests.swift */,
 			);
 			path = AmoraTests;
 			sourceTree = "<group>";
@@ -113,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000009 /* DatePlanClient.swift */,
+				A20000000000000000000011 /* LocationLabelService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -208,6 +214,7 @@
 				A10000000000000000000003 /* AppConfig.swift in Sources */,
 				A10000000000000000000004 /* DatePlanModels.swift in Sources */,
 				A10000000000000000000006 /* DatePlanClient.swift in Sources */,
+				A10000000000000000000008 /* LocationLabelService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -217,6 +224,7 @@
 			files = (
 				A10000000000000000000005 /* DatePlanModelsTests.swift in Sources */,
 				A10000000000000000000007 /* DatePlanClientTests.swift in Sources */,
+				A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
