@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
+import { generateDatePlan } from "../src/openai";
 import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
@@ -60,6 +61,10 @@ vi.mock("../src/openai", () => ({
   generateDatePlan: vi.fn(async () => validPlan)
 }));
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 describe("POST /generate-plan", () => {
   it("returns a generated plan for a valid request", async () => {
     const response = await worker.fetch(
@@ -73,6 +78,7 @@ describe("POST /generate-plan", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(validPlan);
+    expect(generateDatePlan).toHaveBeenCalledWith(validRequest, { OPENAI_API_KEY: "test-key" });
   });
 
   it("rejects invalid request bodies", async () => {

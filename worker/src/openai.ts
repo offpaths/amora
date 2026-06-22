@@ -53,5 +53,28 @@ function extractJsonCandidate(payload: unknown): unknown {
     const text = String((payload as { output_text: unknown }).output_text);
     return JSON.parse(text);
   }
+
+  if (typeof payload === "object" && payload !== null && "output" in payload) {
+    const output = (payload as { output: unknown }).output;
+    if (Array.isArray(output)) {
+      for (const item of output) {
+        if (typeof item !== "object" || item === null || !("content" in item)) {
+          continue;
+        }
+
+        const content = (item as { content: unknown }).content;
+        if (!Array.isArray(content)) {
+          continue;
+        }
+
+        for (const part of content) {
+          if (typeof part === "object" && part !== null && "text" in part) {
+            return JSON.parse(String((part as { text: unknown }).text));
+          }
+        }
+      }
+    }
+  }
+
   throw new Error("No JSON candidate found in OpenAI response");
 }
