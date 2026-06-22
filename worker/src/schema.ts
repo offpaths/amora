@@ -18,6 +18,10 @@ export const PreviewStopSchema = z.object({
   concept: z.string().trim().min(8).max(160)
 });
 
+const PreviewStopOneSchema = PreviewStopSchema.extend({ order: z.literal(1) });
+const PreviewStopTwoSchema = PreviewStopSchema.extend({ order: z.literal(2) });
+const PreviewStopThreeSchema = PreviewStopSchema.extend({ order: z.literal(3) });
+
 export const LockedStopSchema = z.object({
   order: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   venueName: z.string().trim().min(2).max(120),
@@ -28,16 +32,20 @@ export const LockedStopSchema = z.object({
   estimatedCost: z.string().trim().min(1).max(40)
 });
 
+const LockedStopOneSchema = LockedStopSchema.extend({ order: z.literal(1) });
+const LockedStopTwoSchema = LockedStopSchema.extend({ order: z.literal(2) });
+const LockedStopThreeSchema = LockedStopSchema.extend({ order: z.literal(3) });
+
 export const DatePlanResponseSchema = z.object({
   id: z.string().trim().min(6).max(80),
   preview: z.object({
     title: z.string().trim().min(8).max(120),
     summaryBadges: z.array(z.string().trim().min(1).max(40)).min(2).max(6),
-    stops: z.tuple([PreviewStopSchema, PreviewStopSchema, PreviewStopSchema])
+    stops: z.tuple([PreviewStopOneSchema, PreviewStopTwoSchema, PreviewStopThreeSchema])
   }),
   lockedPlan: z.object({
     totalEstimatedCost: z.string().trim().min(1).max(40),
-    stops: z.tuple([LockedStopSchema, LockedStopSchema, LockedStopSchema])
+    stops: z.tuple([LockedStopOneSchema, LockedStopTwoSchema, LockedStopThreeSchema])
   })
 });
 

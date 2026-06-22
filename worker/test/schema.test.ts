@@ -142,4 +142,68 @@ describe("DatePlanResponseSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("rejects duplicate preview stop orders", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      preview: {
+        ...validDatePlanResponse.preview,
+        stops: [
+          validDatePlanResponse.preview.stops[0],
+          { ...validDatePlanResponse.preview.stops[1], order: 1 },
+          validDatePlanResponse.preview.stops[2]
+        ]
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects out-of-order preview stops", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      preview: {
+        ...validDatePlanResponse.preview,
+        stops: [
+          validDatePlanResponse.preview.stops[1],
+          validDatePlanResponse.preview.stops[0],
+          validDatePlanResponse.preview.stops[2]
+        ]
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate locked stop orders", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      lockedPlan: {
+        ...validDatePlanResponse.lockedPlan,
+        stops: [
+          validDatePlanResponse.lockedPlan.stops[0],
+          { ...validDatePlanResponse.lockedPlan.stops[1], order: 1 },
+          validDatePlanResponse.lockedPlan.stops[2]
+        ]
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects out-of-order locked stops", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      lockedPlan: {
+        ...validDatePlanResponse.lockedPlan,
+        stops: [
+          validDatePlanResponse.lockedPlan.stops[1],
+          validDatePlanResponse.lockedPlan.stops[0],
+          validDatePlanResponse.lockedPlan.stops[2]
+        ]
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
