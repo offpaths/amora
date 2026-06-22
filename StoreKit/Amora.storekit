@@ -1,0 +1,33 @@
+{
+  "identifier" : "Amora",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "thoughtful_date_plan_unlock_1",
+      "localizations" : [
+        {
+          "description" : "Unlock the exact 3-stop thoughtful date plan.",
+          "displayName" : "Unlock 1 Thoughtful Date Plan",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "thoughtful_date_plan_unlock_1",
+      "referenceName" : "Unlock 1 Thoughtful Date Plan",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
