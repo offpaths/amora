@@ -6,6 +6,10 @@ The approved MVP design is recorded in `docs/superpowers/specs/2026-06-22-though
 
 Key decisions:
 
+- App name is Amora.
+- Primary domain is `planwithamora.com`.
+- Tagline is "Date plans with intention."
+- Primary CTA is "Plan with Amora."
 - Build a SwiftUI iOS app with a Cloudflare Worker backend.
 - Keep the OpenAI API key server-side in the Worker.
 - Use editable approximate area labels instead of raw coordinates in MVP generation requests.

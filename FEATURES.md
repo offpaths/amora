@@ -1,0 +1,155 @@
+# Feature Ideas
+
+## Future Feature Candidates
+
+These are possible features to consider after the Thursday MVP. They are not part of the current MVP unless explicitly moved into scope.
+
+### Current Events In Plans
+
+Suggest current events as part of the generated date plan.
+
+Possible examples:
+
+- Concerts
+- Gallery openings
+- Pop-ups
+- Markets
+- Comedy shows
+- Seasonal activities
+- Local festivals
+
+Why it could matter:
+
+- Makes plans feel timely and special.
+- Helps the app feel locally aware.
+- Creates a stronger "you would not have found this yourself" moment.
+
+Risks:
+
+- Event data can be stale, incomplete, or hard to verify.
+- Some events require tickets, reservations, or age restrictions.
+- More failure cases around timing, availability, and location.
+
+### Browsable User-Generated Date Catalog
+
+A cataloged, browsable, and rateable list of user-generated dates that people can pick from.
+
+Possible capabilities:
+
+- Browse date plans by city or neighborhood.
+- Filter by vibe, budget, duration, drinking/no drinking, and activity type.
+- Rate date plans after trying them.
+- Save favorite plans.
+- Surface top-rated plans.
+- Let users submit plans they created or completed.
+
+Why it could matter:
+
+- Turns one-off generation into a reusable content asset.
+- Creates social proof around good date ideas.
+- Reduces generation cost for popular plans.
+- Gives users inspiration before they commit to unlocking a custom plan.
+
+Risks:
+
+- Requires moderation and quality control.
+- User-generated venue data can become outdated.
+- Ratings can bias toward generic popular dates.
+- Adds product complexity beyond the MVP.
+
+### Shareable Date Plans
+
+Let users share generated or cataloged date plans with other people.
+
+Possible capabilities:
+
+- Share a public preview link.
+- Share a locked or partially hidden plan.
+- Share a completed date itinerary with venue names and timing.
+- Share to Messages, Instagram, TikTok, or other social channels.
+- Let women send a plan idea or app link to men as a hint.
+- Let users share top-rated catalog plans.
+
+Why it could matter:
+
+- Supports the woman-to-man sharing loop.
+- Makes good plans spread beyond the original user.
+- Creates organic acquisition from date ideas that feel clever or thoughtful.
+- Helps user-generated catalog plans gain visibility.
+
+Risks:
+
+- Shared plans can leak paid value if full details are public.
+- Public links may need moderation or expiration controls.
+- Social sharing adds privacy considerations around locations and personal preferences.
+- Requires clear rules for what is visible before and after unlock.
+
+### Reserve From The App
+
+Let users make reservations directly from the app after choosing or unlocking a date plan.
+
+Possible capabilities:
+
+- Add reservation links for restaurants, events, or experiences.
+- Deep-link to booking providers.
+- Show reservation availability when available.
+- Track which stops require booking versus walk-in.
+
+Why it could matter:
+
+- Turns planning into execution.
+- Reduces friction after the user unlocks a plan.
+- Makes the app feel more complete and premium.
+
+Risks:
+
+- Requires integration with booking providers or venue websites.
+- Availability can change quickly.
+- Adds support complexity when reservations fail or change.
+
+### Anniversary And Date Reminders
+
+Remind users about anniversaries, birthdays, special occasions, or upcoming planned dates.
+
+Possible capabilities:
+
+- Save important dates.
+- Send reminders before anniversaries or birthdays.
+- Suggest date plans based on the occasion.
+- Remind users to book ahead of time.
+
+Why it could matter:
+
+- Expands the product from one-off planning into relationship maintenance.
+- Creates repeat usage.
+- Helps users avoid forgetting important moments.
+
+Risks:
+
+- Requires notification permissions.
+- May require saved profiles or accounts later.
+- Could distract from the single-date MVP if added too early.
+
+### AI-Assisted Auto Reservations
+
+Use AI to help book reservations ahead of time.
+
+Possible capabilities:
+
+- Find reservation options that match the generated plan.
+- Suggest backup venues when the first option is unavailable.
+- Draft booking requests or messages.
+- Eventually complete reservations through supported booking integrations.
+
+Why it could matter:
+
+- Creates a stronger concierge experience.
+- Makes the user feel like the app handled the hard parts.
+- Could justify higher pricing or premium tiers.
+
+Risks:
+
+- High complexity and reliability requirements.
+- Reservation mistakes are high-friction user failures.
+- Requires careful confirmation before booking anything.
+- May require third-party integrations, accounts, payment handling, or human fallback.

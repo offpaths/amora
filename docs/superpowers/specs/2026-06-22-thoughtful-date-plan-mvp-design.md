@@ -118,6 +118,7 @@ Free users can regenerate previews before purchase.
 The MVP uses one StoreKit consumable product:
 
 - Product: Unlock 1 Thoughtful Date Plan
+- Product id: `thoughtful_date_plan_unlock_1`
 - Target price: $4.99
 
 Purchasing unlocks the current generated plan.
