@@ -136,6 +136,25 @@ describe("generateDatePlan", () => {
     await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
   });
 
+  it("uses valid raw output when top-level output_text is invalid", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        output_text: "not json",
+        output: [
+          {
+            type: "message",
+            content: [
+              { type: "output_text", text: JSON.stringify(validPlan) }
+            ]
+          }
+        ]
+      })
+    );
+
+    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+  });
+
   it("keeps output_text fallback compatibility", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(jsonResponse({ output_text: JSON.stringify(validPlan) }));

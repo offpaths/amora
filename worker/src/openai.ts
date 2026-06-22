@@ -57,10 +57,7 @@ export function buildPrompt(input: GeneratePlanRequest): string {
 }
 
 function extractJsonCandidate(payload: unknown): unknown {
-  if (typeof payload === "object" && payload !== null && "output_text" in payload) {
-    const text = String((payload as { output_text: unknown }).output_text);
-    return JSON.parse(text);
-  }
+  const candidates: string[] = [];
 
   if (typeof payload === "object" && payload !== null && "output" in payload) {
     const output = (payload as { output: unknown }).output;
@@ -82,12 +79,20 @@ function extractJsonCandidate(payload: unknown): unknown {
         ];
 
         for (const part of orderedTextParts) {
-          const candidate = parseJsonCandidate(String(part.text));
-          if (candidate !== undefined) {
-            return candidate;
-          }
+          candidates.push(String(part.text));
         }
       }
+    }
+  }
+
+  if (typeof payload === "object" && payload !== null && "output_text" in payload) {
+    candidates.push(String((payload as { output_text: unknown }).output_text));
+  }
+
+  for (const text of candidates) {
+    const candidate = parseJsonCandidate(text);
+    if (candidate !== undefined) {
+      return candidate;
     }
   }
 
