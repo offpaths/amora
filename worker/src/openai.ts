@@ -28,8 +28,7 @@ export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Pr
   }
 
   const payload: unknown = await response.json();
-  const candidate = extractJsonCandidate(payload);
-  return DatePlanResponseSchema.parse(candidate);
+  return extractDatePlanCandidate(payload);
 }
 
 export function buildPrompt(input: GeneratePlanRequest): string {
@@ -56,7 +55,7 @@ export function buildPrompt(input: GeneratePlanRequest): string {
   ].join("\n");
 }
 
-function extractJsonCandidate(payload: unknown): unknown {
+function extractDatePlanCandidate(payload: unknown): DatePlanResponse {
   const candidates: string[] = [];
 
   if (typeof payload === "object" && payload !== null && "output" in payload) {
@@ -91,8 +90,13 @@ function extractJsonCandidate(payload: unknown): unknown {
 
   for (const text of candidates) {
     const candidate = parseJsonCandidate(text);
-    if (candidate !== undefined) {
-      return candidate;
+    if (candidate === undefined) {
+      continue;
+    }
+
+    const parsed = DatePlanResponseSchema.safeParse(candidate);
+    if (parsed.success) {
+      return parsed.data;
     }
   }
 
