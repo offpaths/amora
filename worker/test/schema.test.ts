@@ -1,6 +1,51 @@
 import { describe, expect, it } from "vitest";
 import { GeneratePlanRequestSchema, DatePlanResponseSchema } from "../src/schema";
 
+const validDatePlanResponse = {
+  id: "plan_123",
+  preview: {
+    title: "A cozy 2-hour plan near Williamsburg",
+    summaryBadges: ["$$", "2 hours", "No bars"],
+    stops: [
+      { order: 1, concept: "A cozy conversation starter" },
+      { order: 2, concept: "A personal activity together" },
+      { order: 3, concept: "A gentle final stop" }
+    ]
+  },
+  lockedPlan: {
+    totalEstimatedCost: "$60-$90",
+    stops: [
+      {
+        order: 1,
+        venueName: "Example Cafe",
+        address: "123 Example St",
+        appleMapsQuery: "Example Cafe 123 Example St",
+        durationMinutes: 40,
+        reason: "A calm first stop.",
+        estimatedCost: "$20-$30"
+      },
+      {
+        order: 2,
+        venueName: "Example Bookstore",
+        address: "456 Example Ave",
+        appleMapsQuery: "Example Bookstore 456 Example Ave",
+        durationMinutes: 50,
+        reason: "A thoughtful middle stop.",
+        estimatedCost: "$15-$25"
+      },
+      {
+        order: 3,
+        venueName: "Example Dessert",
+        address: "789 Example Blvd",
+        appleMapsQuery: "Example Dessert 789 Example Blvd",
+        durationMinutes: 30,
+        reason: "A sweet closing moment.",
+        estimatedCost: "$25-$35"
+      }
+    ]
+  }
+};
+
 describe("GeneratePlanRequestSchema", () => {
   it("accepts a valid MVP request", () => {
     const result = GeneratePlanRequestSchema.safeParse({
@@ -30,28 +75,66 @@ describe("GeneratePlanRequestSchema", () => {
 });
 
 describe("DatePlanResponseSchema", () => {
-  it("requires exactly 3 preview and locked stops", () => {
+  it("accepts exactly 3 preview and locked stops", () => {
+    const result = DatePlanResponseSchema.safeParse(validDatePlanResponse);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects too few preview stops", () => {
     const result = DatePlanResponseSchema.safeParse({
-      id: "plan_123",
+      ...validDatePlanResponse,
       preview: {
-        title: "A cozy 2-hour plan near Williamsburg",
-        summaryBadges: ["$$", "2 hours", "No bars"],
+        ...validDatePlanResponse.preview,
+        stops: validDatePlanResponse.preview.stops.slice(0, 2)
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects too many preview stops", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      preview: {
+        ...validDatePlanResponse.preview,
         stops: [
-          { order: 1, concept: "A cozy conversation starter" },
-          { order: 2, concept: "A personal activity" }
+          ...validDatePlanResponse.preview.stops,
+          { order: 3, concept: "An extra preview stop" }
         ]
-      },
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects too few locked stops", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
       lockedPlan: {
-        totalEstimatedCost: "$60-$90",
+        ...validDatePlanResponse.lockedPlan,
+        stops: validDatePlanResponse.lockedPlan.stops.slice(0, 2)
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects too many locked stops", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      lockedPlan: {
+        ...validDatePlanResponse.lockedPlan,
         stops: [
+          ...validDatePlanResponse.lockedPlan.stops,
           {
-            order: 1,
-            venueName: "Example Cafe",
-            address: "123 Example St",
-            appleMapsQuery: "Example Cafe 123 Example St",
-            durationMinutes: 40,
-            reason: "A calm first stop.",
-            estimatedCost: "$20-$30"
+            order: 3,
+            venueName: "Example Nightcap",
+            address: "321 Example Rd",
+            appleMapsQuery: "Example Nightcap 321 Example Rd",
+            durationMinutes: 25,
+            reason: "An extra locked stop.",
+            estimatedCost: "$10-$20"
           }
         ]
       }
