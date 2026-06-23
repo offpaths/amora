@@ -34,7 +34,7 @@ final class DatePlanClientTests: XCTestCase {
         URLProtocolStub.requestHandler = { request in
             XCTAssertEqual(request.url?.path, "/generate-plan")
             XCTAssertEqual(request.httpMethod, "POST")
-            let body = try XCTUnwrap(request.httpBody)
+            let body = try XCTUnwrap(request.httpBodyData)
             let encoded = try JSONDecoder().decode(GeneratePlanRequest.self, from: body)
             XCTAssertEqual(encoded.locationLabel, "Williamsburg, Brooklyn")
             return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!, responseJSON)
@@ -85,7 +85,7 @@ final class DatePlanClientTests: XCTestCase {
 }
 
 final class URLProtocolStub: URLProtocol {
-    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -114,5 +114,35 @@ private extension URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [URLProtocolStub.self]
         return URLSession(configuration: configuration)
+    }
+}
+
+private extension URLRequest {
+    var httpBodyData: Data? {
+        if let httpBody {
+            return httpBody
+        }
+
+        guard let httpBodyStream else {
+            return nil
+        }
+
+        httpBodyStream.open()
+        defer { httpBodyStream.close() }
+
+        var data = Data()
+        let bufferSize = 1024
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+        defer { buffer.deallocate() }
+
+        while httpBodyStream.hasBytesAvailable {
+            let readCount = httpBodyStream.read(buffer, maxLength: bufferSize)
+            if readCount <= 0 {
+                break
+            }
+            data.append(buffer, count: readCount)
+        }
+
+        return data
     }
 }
