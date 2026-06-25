@@ -61,7 +61,7 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <StoreKitConfigurationFileReference
-         identifier = "../../StoreKit/Amora.storekit">
+         identifier = "../StoreKit/Amora.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
