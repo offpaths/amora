@@ -1,5 +1,7 @@
+import Combine
 import CoreLocation
 import Foundation
+import MapKit
 
 enum LocationLabelFormatter {
     static func label(from placemark: CLPlacemark) -> String {
@@ -24,6 +26,53 @@ enum LocationLabelFormatter {
             return administrativeArea
         }
         return ""
+    }
+}
+
+enum LocationSuggestionFormatter {
+    static func label(title: String, subtitle: String) -> String {
+        guard !subtitle.isEmpty else { return title }
+        guard !title.localizedCaseInsensitiveContains(subtitle) else { return title }
+        return "\(title), \(subtitle)"
+    }
+}
+
+@MainActor
+final class LocationSuggestionService: NSObject, ObservableObject, @preconcurrency MKLocalSearchCompleterDelegate {
+    @Published private(set) var suggestions: [MKLocalSearchCompletion] = []
+
+    private let completer = MKLocalSearchCompleter()
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest, .query]
+    }
+
+    func update(query: String) {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedQuery.count >= 2 else {
+            clear()
+            return
+        }
+        completer.queryFragment = trimmedQuery
+    }
+
+    func clear() {
+        completer.queryFragment = ""
+        suggestions = []
+    }
+
+    func label(for suggestion: MKLocalSearchCompletion) -> String {
+        LocationSuggestionFormatter.label(title: suggestion.title, subtitle: suggestion.subtitle)
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        suggestions = Array(completer.results.prefix(5))
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        suggestions = []
     }
 }
 

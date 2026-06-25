@@ -15,6 +15,7 @@ Key decisions:
 - Keep the OpenAI API key server-side in the Worker.
 - Use editable approximate area labels instead of raw coordinates in MVP generation requests.
 - Prefer neighborhood-level planning areas when CoreLocation reverse geocoding provides them.
+- Treat current-location detection as a convenience, not the primary planning input; typed location suggestions are the reliable path because simulator and device GPS can be broad or mocked.
 - Use OpenAI web search for local venue relevance, but keep current event discovery out of scope.
 - Gate exact venue details behind a StoreKit paywall.
 - Make Amora Plus the primary paywall action and present the one-plan unlock as a lower-emphasis fallback, not an equal competing card.

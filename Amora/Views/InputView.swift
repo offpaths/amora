@@ -3,6 +3,7 @@ import SwiftUI
 struct InputView: View {
     @ObservedObject var viewModel: PlanViewModel
     @State private var locationService = LocationLabelService()
+    @StateObject private var locationSuggestionService = LocationSuggestionService()
     @State private var isDetectingLocation = false
     @State private var step = 1
 
@@ -54,11 +55,52 @@ struct InputView: View {
                         .foregroundStyle(AmoraTheme.muted)
                     TextField("Neighborhood or city", text: $viewModel.locationLabel)
                         .textFieldStyle(.plain)
+                        .onChange(of: viewModel.locationLabel) { _, query in
+                            locationSuggestionService.update(query: query)
+                        }
+
+                    if !locationSuggestionService.suggestions.isEmpty {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(locationSuggestionService.suggestions, id: \.self) { suggestion in
+                                Button {
+                                    viewModel.locationLabel = locationSuggestionService.label(for: suggestion)
+                                    locationSuggestionService.clear()
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(suggestion.title)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(AmoraTheme.ink)
+                                        if !suggestion.subtitle.isEmpty {
+                                            Text(suggestion.subtitle)
+                                                .font(.caption)
+                                                .foregroundStyle(AmoraTheme.muted)
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 9)
+                                }
+                                .buttonStyle(.plain)
+
+                                if suggestion != locationSuggestionService.suggestions.last {
+                                    Divider()
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(AmoraTheme.background.opacity(0.55))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(AmoraTheme.border, lineWidth: 1)
+                        }
+                    }
 
                     Button {
                         Task { await useCurrentLocation() }
                     } label: {
-                        Label(isDetectingLocation ? "Finding your area" : "Use Current Location", systemImage: "location")
+                        Label(isDetectingLocation ? "Finding your area" : "Detect my area", systemImage: "location")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(AmoraTheme.oxblood)
                     }
