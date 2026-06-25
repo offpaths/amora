@@ -47,8 +47,8 @@ struct InputView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section("What do they like?") {
-                    TextField("Bookstores, matcha, quiet places", text: $viewModel.partnerLikes, axis: .vertical)
+                Section("What would make this feel personal?") {
+                    TextField("She mentioned matcha, art books, quiet places...", text: $viewModel.partnerLikes, axis: .vertical)
                         .lineLimit(2...4)
                 }
 

@@ -7,7 +7,7 @@ Status: Draft
 
 Build Amora, a premium iOS MVP that helps a user create a thoughtful 3-stop date plan near a chosen area. The app asks for lightweight context, generates an anonymized preview, and charges to unlock the exact plan.
 
-The MVP tests whether users will pay $4.99 for a specific, personalized date plan.
+The MVP tests whether users will pay for specific, personalized date planning. The first implementation uses a $4.99 one-plan unlock, but the strategic monetization direction is subscription-first with one-plan purchase as a lower-friction fallback.
 
 ## Brand
 
@@ -62,13 +62,17 @@ Primary promise:
 
 Supporting promise:
 
-> Tell us what she likes. We will build a thoughtful 3-stop date plan near you.
+> Tell us what would make this feel personal. We will build a thoughtful 3-stop date plan near you.
 
 The product should feel premium and intentional, not like a cheap infinite date-idea generator.
 
 Secondary conversion angle:
 
 > Make the money you are already spending on the date worth it by planning something that helps her feel seen and shows that you care.
+
+Freshness angle:
+
+> The best dates do not feel copy-pasted. Build something around this person, this week, and this mood.
 
 ## MVP Goals
 
@@ -102,7 +106,7 @@ The input screen collects:
 - Vibe chip: cozy, adventurous, romantic, low-key, foodie, outdoorsy.
 - No drinking toggle.
 - Date duration: 1.5 hours, 2 hours, 3 hours, 4 hours.
-- Optional free-text field: "What does she like?"
+- Optional free-text field: "What would make this feel personal?"
 
 Location behavior:
 
@@ -135,6 +139,7 @@ Preview shows:
 
 - Anonymized 3-stop concepts.
 - Matched-interest signals.
+- A personal-touch signal that shows the plan was built around supplied details.
 - Budget, duration, and no-drinking badges.
 - Short teaser explaining why the plan fits.
 
@@ -171,7 +176,13 @@ The full plan includes:
 
 ## Monetization
 
-MVP product:
+Strategic monetization direction:
+
+- Subscription-first positioning.
+- Monthly subscription should become the primary offer because users need fresh plans for different people, moods, and moments.
+- One-plan purchase remains useful as a lower-friction fallback for users who only need help with one date.
+
+Current implemented MVP product:
 
 - StoreKit consumable.
 - Name: Unlock 1 Thoughtful Date Plan.
@@ -183,7 +194,7 @@ Purchase behavior:
 - Purchase unlocks the current generated plan.
 - Paid unlock includes 1 exact-plan regenerate.
 - Failed generation or failed purchase must not charge or unlock.
-- No subscription in MVP.
+- Subscription purchase flow is not implemented yet in the current app build.
 
 ## Backend Requirements
 
@@ -203,6 +214,9 @@ Generation constraints:
 - The prompt treats `locationLabel` as the planning area, not the whole metro region.
 - Prefer stops close to the planning area.
 - Prefer stops close enough to each other for a short walk or short rideshare.
+- Make the plan feel specific to the supplied personal details, not like a reusable generic route.
+- Use supplied interests in preview concepts and locked-stop reasons when provided.
+- Avoid plans that could be copy-pasted for different people without changing the personal logic.
 - Do not promise current events.
 
 Reliability pattern:
@@ -253,7 +267,7 @@ MVP validation metrics:
 
 Initial product success means users understand the preview, trust the plan enough to unlock, and use Apple Maps actions after purchase.
 
-The monetization story should frame the $4.99 unlock as protecting the larger date spend, not as buying generic AI output.
+The monetization story should frame the one-plan unlock as protecting the larger date spend, not as buying generic AI output. The subscription story should frame recurring value as fresh plans for different people, moods, and moments so users do not recycle the same date.
 
 ## Acceptance Criteria
 
@@ -265,7 +279,7 @@ The monetization story should frame the $4.99 unlock as protecting the larger da
 - Paid user gets 1 exact-plan regenerate.
 - Backend keeps OpenAI API key out of the iOS app.
 - Worker returns clean retryable errors for invalid generation output.
-- Current events, Google Places, accounts, subscriptions, and route optimization are not implemented.
+- Current events, Google Places, accounts, subscription purchase flow, and route optimization are not implemented.
 
 ## Reference Docs
 

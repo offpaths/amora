@@ -84,6 +84,33 @@ Risks:
 - Social sharing adds privacy considerations around locations and personal preferences.
 - Requires clear rules for what is visible before and after unlock.
 
+### Screenshot-Based Personalization
+
+Let users add a screenshot or pasted text from a profile, messages, or notes so Amora can make the date feel more personal.
+
+Possible capabilities:
+
+- Upload a dating profile screenshot.
+- Upload a screenshot of relevant messages.
+- Paste profile text or message excerpts.
+- Extract interests, dislikes, tone, constraints, and conversation clues.
+- Let the user review and edit extracted personalization clues before generation.
+- Use the clues to choose stops, reasons, and small thoughtful details.
+
+Why it could matter:
+
+- Reduces the pressure on users to write a good prompt.
+- Helps the plan reflect what the person actually likes.
+- Makes the unlocked plan feel more thoughtful and premium.
+- Creates a stronger "I paid attention" moment.
+
+Risks:
+
+- Screenshots and messages are sensitive personal data.
+- The feature must feel like effort and thoughtfulness, not surveillance.
+- Requires clear copy, consent-aware framing, and strong privacy handling.
+- Image upload and extraction adds complexity beyond the Thursday MVP.
+
 ### Reserve From The App
 
 Let users make reservations directly from the app after choosing or unlocking a date plan.
@@ -107,14 +134,17 @@ Risks:
 - Availability can change quickly.
 - Adds support complexity when reservations fail or change.
 
-### Anniversary And Date Reminders
+### First Date And Anniversary Reminders
 
-Remind users about anniversaries, birthdays, special occasions, or upcoming planned dates.
+Remind users about first-date anniversaries, relationship anniversaries, birthdays, special occasions, or upcoming planned dates.
 
 Possible capabilities:
 
 - Save important dates.
+- Save the first date as a meaningful relationship milestone.
+- Send first-date anniversary reminders.
 - Send reminders before anniversaries or birthdays.
+- Suggest plans that reference the original first date or shared memories.
 - Suggest date plans based on the occasion.
 - Remind users to book ahead of time.
 

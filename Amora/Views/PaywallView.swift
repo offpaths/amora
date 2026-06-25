@@ -9,7 +9,7 @@ struct PaywallView: View {
             Text("Unlock 1 Thoughtful Date Plan")
                 .font(.largeTitle.bold())
 
-            Text("Make the money you are already spending on the date worth it by planning something that helps them feel seen.")
+            Text("Make the money you are already spending on the date worth it with a plan built around this person, not a copy-pasted night out.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 
@@ -17,6 +17,7 @@ struct PaywallView: View {
                 Label("Exact venues", systemImage: "mappin.and.ellipse")
                 Label("Timing per stop", systemImage: "clock")
                 Label("Reasons that match their interests", systemImage: "heart")
+                Label("Fresh plan for this person and moment", systemImage: "sparkles")
                 Label("Estimated cost", systemImage: "dollarsign.circle")
                 Label("Apple Maps actions", systemImage: "map")
             }

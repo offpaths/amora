@@ -65,13 +65,33 @@ Primary message:
 
 Supporting messages:
 
-- Tell us what she likes. We will build a thoughtful 3-stop date plan near you.
+- Tell us what would make this feel personal. We will build a thoughtful 3-stop date plan near you.
 - Built around what she likes, your budget, and places nearby.
 - Show her you actually thought this through.
 - Make the money you are already spending on the date worth it by planning something that helps her feel seen.
 - A better plan turns dinner, dessert, and travel into effort she can actually notice.
+- The best dates do not feel copy-pasted.
+- Fresh plans for different people, moods, and moments.
 
 Avoid copy that implies manipulation, control, or guaranteed romantic outcomes.
+
+## Personalization And Reuse
+
+Amora should make personalization feel like the product value, not just venue discovery.
+
+Core idea:
+
+> A thoughtful date should feel made for this person, this week, and this mood.
+
+Supporting messages:
+
+- "Reusing the same date is easy to spot. Build something around who you are actually seeing."
+- "Do not let date night become the same dinner-and-drinks loop."
+- "A plan that mentions what she likes feels different from a list of places."
+- "Unlimited plans means you never have to recycle the same idea twice."
+- "Fresh plans for different people, moods, and moments."
+
+Use this to support the subscription pitch without shaming the user. The emotional framing is variety as thoughtfulness, not "you are bad if you repeat a date."
 
 ## Stand Out Angle
 
@@ -177,7 +197,8 @@ Preview hides:
 
 Paywall:
 
-- Product: Unlock 1 Thoughtful Date Plan.
+- Primary strategic offer: monthly subscription for unlimited thoughtful date plans.
+- Fallback offer: Unlock 1 Thoughtful Date Plan.
 - Product id: `thoughtful_date_plan_unlock_1`.
 - Target price: $4.99.
 - Paid unlock reveals the exact 3-stop plan and includes 1 exact-plan regenerate.
@@ -188,3 +209,4 @@ Conversion thesis:
 - The paywall sells specificity and confidence.
 - The unlock price should feel cheap compared with the date, but premium compared with generic date ideas.
 - The purchase protects the larger date spend by helping the user plan something more thoughtful.
+- The subscription sells freshness: every new person, mood, and moment gets a plan that does not feel recycled.

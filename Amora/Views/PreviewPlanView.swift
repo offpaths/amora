@@ -13,6 +13,10 @@ struct PreviewPlanView: View {
 
                     FlowBadges(badges: plan.preview.summaryBadges)
 
+                    Text("Built around the details you gave, so this does not feel like a recycled date.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
                     VStack(spacing: 12) {
                         ForEach(plan.preview.stops) { stop in
                             VStack(alignment: .leading, spacing: 8) {
@@ -21,7 +25,7 @@ struct PreviewPlanView: View {
                                     .foregroundStyle(.secondary)
                                 Text(stop.concept)
                                     .font(.headline)
-                                Label("Exact venue, timing, cost, and Maps unlock after purchase", systemImage: "lock.fill")
+                                Label("Exact venue, timing, cost, and personal reasons unlock after purchase", systemImage: "lock.fill")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -36,7 +40,7 @@ struct PreviewPlanView: View {
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
 
-                    Button("Regenerate Preview") {
+                    Button("Make It Feel Different") {
                         Task { await viewModel.generatePreview() }
                     }
                     .frame(maxWidth: .infinity)
