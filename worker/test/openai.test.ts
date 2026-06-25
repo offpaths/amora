@@ -17,9 +17,27 @@ const validPlan: DatePlanResponse = {
     title: "A cozy 2-hour plan near Williamsburg",
     summaryBadges: ["$$", "2 hours", "No bars", "Matched to bookstores"],
     stops: [
-      { order: 1, concept: "A cozy conversation starter near Williamsburg" },
-      { order: 2, concept: "A personal activity matched to bookstores" },
-      { order: 3, concept: "A relaxed dessert finish nearby" }
+      {
+        order: 1,
+        concept: "A cozy conversation starter near Williamsburg",
+        vibe: "cozy",
+        reason: "Starts with an easy, quiet setting for conversation.",
+        personalizationSignal: "near Williamsburg"
+      },
+      {
+        order: 2,
+        concept: "A personal activity matched to bookstores",
+        vibe: "personal",
+        reason: "Builds the date around a shared browsing activity.",
+        personalizationSignal: "bookstores"
+      },
+      {
+        order: 3,
+        concept: "A relaxed dessert finish nearby",
+        vibe: "relaxed",
+        reason: "Ends low-pressure with something sweet close by.",
+        personalizationSignal: "quiet places"
+      }
     ]
   },
   lockedPlan: {
