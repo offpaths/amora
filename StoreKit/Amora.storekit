@@ -8,7 +8,7 @@
     {
       "displayPrice" : "4.99",
       "familyShareable" : false,
-      "internalID" : "thoughtful_date_plan_unlock_1",
+      "internalID" : "C361E4D9-2DF4-4C80-99E2-D03060E5BFBD",
       "localizations" : [
         {
           "description" : "Unlock the exact 3-stop thoughtful date plan.",
@@ -26,11 +26,11 @@
   },
   "subscriptionGroups" : [
     {
-      "id" : "2B04DAB4-061D-4808-9895-AA545905C4B7",
+      "id" : "209E7447-6077-4799-AEB3-FE63EA53EF09",
       "localizations" : [
         {
-          "name" : "Amora Plus",
-          "locale" : "en_US"
+          "locale" : "en_US",
+          "name" : "Amora Plus"
         }
       ],
       "name" : "Amora Plus",
@@ -45,7 +45,7 @@
           "displayPrice" : "9.99",
           "familyShareable" : false,
           "groupNumber" : 1,
-          "internalID" : "C5CF892C-B66A-4A2A-94F1-B77BFBB49916",
+          "internalID" : "FF2E4051-84B8-45C5-8559-C603CCBB77BB",
           "introductoryOffer" : null,
           "localizations" : [
             {
@@ -57,7 +57,7 @@
           "productID" : "amora_plus_monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Amora Plus Monthly",
-          "subscriptionGroupID" : "2B04DAB4-061D-4808-9895-AA545905C4B7",
+          "subscriptionGroupID" : "209E7447-6077-4799-AEB3-FE63EA53EF09",
           "type" : "RecurringSubscription"
         }
       ]
