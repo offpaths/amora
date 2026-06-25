@@ -6,7 +6,7 @@ enum AmoraTheme {
     static let ink = Color(red: 0.129, green: 0.102, blue: 0.090)
     static let muted = Color(red: 0.455, green: 0.420, blue: 0.388)
     static let oxblood = Color(red: 0.431, green: 0.122, blue: 0.169)
-    static let brass = Color(red: 0.690, green: 0.541, blue: 0.290)
+    static let brass = Color(red: 0.475, green: 0.341, blue: 0.125)
     static let olive = Color(red: 0.325, green: 0.420, blue: 0.306)
     static let border = Color(red: 0.890, green: 0.847, blue: 0.792)
 }

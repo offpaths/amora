@@ -36,7 +36,16 @@ struct UnlockedPlanView: View {
                                             Label("Open in Apple Maps", systemImage: "map")
                                                 .font(.subheadline.weight(.semibold))
                                                 .foregroundStyle(AmoraTheme.oxblood)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 12)
+                                                .background(AmoraTheme.surface)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                .overlay {
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(AmoraTheme.border, lineWidth: 1)
+                                                }
                                         }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
