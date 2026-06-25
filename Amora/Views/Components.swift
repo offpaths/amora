@@ -13,8 +13,13 @@ enum AmoraTheme {
 
 struct ScreenBackground: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            .background(AmoraTheme.background.ignoresSafeArea())
+        ZStack {
+            AmoraTheme.background
+                .ignoresSafeArea()
+
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
             .foregroundStyle(AmoraTheme.ink)
     }
 }
@@ -154,7 +159,6 @@ struct LoadingPlanView: View {
 
             Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 28)
         .amoraScreen()
     }
