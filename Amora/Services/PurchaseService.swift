@@ -7,12 +7,20 @@ final class PurchaseService: ObservableObject {
     @Published private(set) var unlockProduct: Product?
     @Published private(set) var plusMonthlyProduct: Product?
     @Published private(set) var hasActiveSubscription = false
+    @Published private(set) var isLoadingProducts = false
+    @Published private(set) var didLoadProducts = false
 
     func loadProduct() async {
         await loadProducts()
     }
 
     func loadProducts() async {
+        isLoadingProducts = true
+        defer {
+            didLoadProducts = true
+            isLoadingProducts = false
+        }
+
         do {
             let products = try await Product.products(for: [AppConfig.unlockProductID, AppConfig.plusMonthlyProductID])
             unlockProduct = products.first { $0.id == AppConfig.unlockProductID }

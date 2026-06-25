@@ -9,6 +9,18 @@ struct PaywallView: View {
     @ObservedObject var purchaseService: PurchaseService
     let onPurchased: (PaywallPurchaseResult) -> Void
 
+    private var isPreparingPurchase: Bool {
+        purchaseService.isLoadingProducts || !purchaseService.didLoadProducts
+    }
+
+    private var canPurchaseSubscription: Bool {
+        !isPreparingPurchase && purchaseService.plusMonthlyProduct != nil
+    }
+
+    private var canPurchaseOnePlan: Bool {
+        !isPreparingPurchase && purchaseService.unlockProduct != nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 10) {
@@ -36,12 +48,13 @@ struct PaywallView: View {
 
             Spacer()
 
-            PrimaryButton(title: "Start Amora Plus \(purchaseService.plusMonthlyProduct?.displayPrice ?? "$9.99/month")", isLoading: false) {
+            PrimaryButton(title: primaryButtonTitle, isLoading: isPreparingPurchase) {
                 Task {
                     let success = await purchaseService.purchasePlusMonthly()
                     onPurchased(.subscription(success))
                 }
             }
+            .disabled(!canPurchaseSubscription)
 
             Button {
                 Task {
@@ -55,6 +68,8 @@ struct PaywallView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 4)
             }
+            .disabled(!canPurchaseOnePlan)
+            .opacity(canPurchaseOnePlan ? 1 : 0.55)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 24)
@@ -62,6 +77,12 @@ struct PaywallView: View {
         .task {
             await purchaseService.loadProducts()
         }
+    }
+
+    private var primaryButtonTitle: String {
+        guard !isPreparingPurchase else { return "Preparing Amora Plus" }
+        guard canPurchaseSubscription else { return "Amora Plus Unavailable" }
+        return "Start Amora Plus \(purchaseService.plusMonthlyProduct?.displayPrice ?? "$9.99/month")"
     }
 }
 
