@@ -7,7 +7,9 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if viewModel.currentPlan == nil {
+            if viewModel.isLoading {
+                LoadingPlanView()
+            } else if viewModel.currentPlan == nil {
                 InputView(viewModel: viewModel)
             } else if viewModel.isUnlocked {
                 UnlockedPlanView(viewModel: viewModel)

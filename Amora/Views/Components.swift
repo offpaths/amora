@@ -125,6 +125,40 @@ struct SecondaryButton: View {
     }
 }
 
+struct LoadingPlanView: View {
+    var body: some View {
+        VStack(spacing: 28) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(AmoraTheme.brass.opacity(0.12))
+                    .frame(width: 104, height: 104)
+
+                ProgressView()
+                    .tint(AmoraTheme.oxblood)
+                    .scaleEffect(1.25)
+            }
+
+            VStack(spacing: 10) {
+                Text("Amora is working")
+                    .font(.system(.title, design: .serif, weight: .bold))
+                    .foregroundStyle(AmoraTheme.ink)
+
+                Text("Building a sealed plan around the area, vibe, and details you shared.")
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(AmoraTheme.muted)
+                    .frame(maxWidth: 310)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 28)
+        .amoraScreen()
+    }
+}
+
 struct FlowBadges: View {
     let badges: [String]
 
