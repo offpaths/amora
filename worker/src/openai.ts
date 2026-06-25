@@ -99,7 +99,6 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,
     `Partner likes or pasted context: ${input.partnerLikes || "not provided"}.`,
     "The partner likes field may contain a clean summary or pasted chat/note context.",
-    "If pasted chat or notes are provided, extract only date-planning signals that are clearly supported by the provided text.",
     "Extract only date-planning signals that are clearly supported by the provided text.",
     "Useful signals include likes, dislikes, food or drink preferences, vibe clues, activities or places mentioned, timing clues, comfort constraints, and personal details that can make the plan feel considered.",
     "Do not psychoanalyze, infer sensitive traits, or make claims about the person beyond the provided context.",
