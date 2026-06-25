@@ -7,45 +7,52 @@ struct UnlockedPlanView: View {
     var body: some View {
         if let plan = viewModel.currentPlan {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 22) {
                     Text("Your thoughtful plan")
-                        .font(.largeTitle.bold())
-                    PillLabel(text: "Estimated total \(plan.lockedPlan.totalEstimatedCost)")
+                        .font(.system(.largeTitle, design: .serif, weight: .bold))
+                        .foregroundStyle(AmoraTheme.ink)
+                    PillLabel(text: "Estimated total \(plan.lockedPlan.totalEstimatedCost)", tint: AmoraTheme.olive)
 
-                    ForEach(plan.lockedPlan.stops) { stop in
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Stop \(stop.order)")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Text(stop.venueName)
-                                .font(.title3.bold())
-                            Text(stop.reason)
-                            HStack {
-                                PillLabel(text: "\(stop.durationMinutes) min")
-                                PillLabel(text: stop.estimatedCost)
+                    VStack(spacing: 12) {
+                        ForEach(plan.lockedPlan.stops) { stop in
+                            SurfaceCard {
+                                HStack(alignment: .top, spacing: 14) {
+                                    ItineraryNumber(value: stop.order)
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text(stop.venueName)
+                                            .font(.title3.weight(.bold))
+                                        Text(stop.address)
+                                            .font(.caption)
+                                            .foregroundStyle(AmoraTheme.muted)
+                                        Text(stop.reason)
+                                            .font(.subheadline)
+                                        HStack {
+                                            PillLabel(text: "\(stop.durationMinutes) min", tint: AmoraTheme.brass)
+                                            PillLabel(text: stop.estimatedCost, tint: AmoraTheme.olive)
+                                        }
+                                        Button {
+                                            openURL(appleMapsURL(for: stop))
+                                        } label: {
+                                            Label("Open in Apple Maps", systemImage: "map")
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(AmoraTheme.oxblood)
+                                        }
+                                    }
+                                }
                             }
-                            Button {
-                                openURL(appleMapsURL(for: stop))
-                            } label: {
-                                Label("Open in Apple Maps", systemImage: "map")
-                            }
-                            .buttonStyle(.bordered)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.secondary.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
 
                     if viewModel.canRegenerateUnlockedPlan {
-                        Button("Regenerate Once") {
+                        PrimaryButton(title: "Regenerate Once", isLoading: viewModel.isLoading) {
                             Task { await viewModel.regenerateUnlockedPlan() }
                         }
-                        .buttonStyle(.borderedProminent)
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
             }
+            .amoraScreen()
         } else {
             InputView(viewModel: viewModel)
         }

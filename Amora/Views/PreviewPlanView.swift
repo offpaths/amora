@@ -7,53 +7,58 @@ struct PreviewPlanView: View {
     var body: some View {
         if let plan = viewModel.currentPlan {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 22) {
                     Text(plan.preview.title)
-                        .font(.largeTitle.bold())
+                        .font(.system(.largeTitle, design: .serif, weight: .bold))
+                        .foregroundStyle(AmoraTheme.ink)
 
                     FlowBadges(badges: plan.preview.summaryBadges)
 
                     Text("Your sealed itinerary is ready. Exact venues, timing, costs, and maps unlock when you reveal the full plan.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AmoraTheme.muted)
 
                     VStack(spacing: 12) {
                         ForEach(plan.preview.stops) { stop in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Stop \(stop.order)")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                Text(stop.concept)
-                                    .font(.headline)
-                                PillLabel(text: stop.vibe)
-                                Text(stop.reason)
-                                    .font(.subheadline)
-                                Text(stop.personalizationSignal)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Label("Exact venue, timing, cost, and maps unlock after purchase", systemImage: "lock.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            SurfaceCard {
+                                HStack(alignment: .top, spacing: 14) {
+                                    ItineraryNumber(value: stop.order)
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text(stop.concept)
+                                            .font(.headline)
+                                        if !stop.vibe.isEmpty {
+                                            PillLabel(text: stop.vibe, tint: AmoraTheme.brass)
+                                        }
+                                        if !stop.reason.isEmpty {
+                                            Text(stop.reason)
+                                                .font(.subheadline)
+                                                .foregroundStyle(AmoraTheme.ink)
+                                        }
+                                        if !stop.personalizationSignal.isEmpty {
+                                            Text(stop.personalizationSignal)
+                                                .font(.caption)
+                                                .foregroundStyle(AmoraTheme.muted)
+                                        }
+                                        Label("Exact venue, timing, cost, and maps unlock after purchase", systemImage: "lock.fill")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(AmoraTheme.oxblood)
+                                    }
+                                }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .background(Color.secondary.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                     }
 
-                    Button("Reveal Full Plan", action: onUnlock)
-                        .buttonStyle(.borderedProminent)
-                        .frame(maxWidth: .infinity)
+                    PrimaryButton(title: "Reveal Full Plan", isLoading: false, action: onUnlock)
 
-                    Button("Make It Feel Different") {
+                    SecondaryButton("Make It Feel Different", systemImage: "arrow.clockwise") {
                         Task { await viewModel.generatePreview() }
                     }
-                    .frame(maxWidth: .infinity)
                     .disabled(viewModel.isLoading)
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
             }
+            .amoraScreen()
         } else {
             InputView(viewModel: viewModel)
         }
