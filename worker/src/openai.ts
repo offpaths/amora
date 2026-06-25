@@ -106,6 +106,7 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     "Make the plan feel specific to this person and moment, not like a reusable generic route.",
     "Use the personal context in preview concepts, preview reasons, preview personalization signals, and locked-stop reasons when provided.",
     "Avoid plans that could be copy-pasted for different people without changing the personal logic.",
+    "Estimate costs for two people using the common local currency of the planning area. Use broad ranges, not exact prices. If local currency is uncertain, choose the most likely currency from the planning area and keep estimates approximate.",
     "Schema contract:",
     "id: string",
     "preview.title: string",

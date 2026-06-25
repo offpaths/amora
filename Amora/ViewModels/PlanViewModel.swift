@@ -11,6 +11,7 @@ final class PlanViewModel: ObservableObject {
     @Published var partnerLikes = ""
     @Published var currentPlan: DatePlanResponse?
     @Published var isUnlocked = false
+    @Published var hasActiveSubscription = false
     @Published var remainingUnlockedRegenerates = 0
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -24,7 +25,7 @@ final class PlanViewModel: ObservableObject {
     }
 
     var canRegenerateUnlockedPlan: Bool {
-        isUnlocked && remainingUnlockedRegenerates > 0
+        isUnlocked && (hasActiveSubscription || remainingUnlockedRegenerates > 0)
     }
 
     func generatePreview() async {
@@ -34,8 +35,8 @@ final class PlanViewModel: ObservableObject {
 
         do {
             currentPlan = try await generate(makeRequest())
-            isUnlocked = false
-            remainingUnlockedRegenerates = 0
+            isUnlocked = hasActiveSubscription
+            remainingUnlockedRegenerates = hasActiveSubscription ? remainingUnlockedRegenerates : 0
         } catch {
             errorMessage = "We could not generate a plan. Try again."
         }
@@ -53,9 +54,24 @@ final class PlanViewModel: ObservableObject {
         }
     }
 
+    func completeSubscriptionPurchase(success: Bool) {
+        guard success else { return }
+        hasActiveSubscription = true
+        unlockCurrentPlan()
+    }
+
+    func setSubscriptionActive(_ isActive: Bool) {
+        hasActiveSubscription = isActive
+        if isActive, currentPlan != nil {
+            isUnlocked = true
+        }
+    }
+
     func regenerateUnlockedPlan() async {
         guard canRegenerateUnlockedPlan else { return }
-        remainingUnlockedRegenerates -= 1
+        if !hasActiveSubscription {
+            remainingUnlockedRegenerates -= 1
+        }
         await generatePreview()
         isUnlocked = true
     }

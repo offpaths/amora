@@ -24,7 +24,34 @@
 
   },
   "subscriptionGroups" : [
-
+    {
+      "id" : "amora_plus_group",
+      "localizations" : [
+        {
+          "name" : "Amora Plus",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Amora Plus",
+      "subscriptions" : [
+        {
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "amora_plus_monthly",
+          "localizations" : [
+            {
+              "description" : "Unlimited unlocked thoughtful date plans.",
+              "displayName" : "Amora Plus",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "amora_plus_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Amora Plus Monthly"
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 4,

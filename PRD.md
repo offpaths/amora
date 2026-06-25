@@ -7,7 +7,7 @@ Status: Draft
 
 Build Amora, a premium iOS MVP that helps a user create a thoughtful 3-stop date plan near a chosen area. The app asks for lightweight context, generates an anonymized preview, and charges to unlock the exact plan.
 
-The MVP tests whether users will pay for specific, personalized date planning. The first implementation uses a $4.99 one-plan unlock, but the strategic monetization direction is subscription-first with one-plan purchase as a lower-friction fallback.
+The MVP tests whether users will pay for specific, personalized date planning. The first monetization hierarchy is subscription-first with a $4.99 one-plan purchase as a lower-friction fallback.
 
 ## Brand
 
@@ -78,7 +78,7 @@ Freshness angle:
 
 - Let the user generate an anonymized date-plan preview from a small set of inputs.
 - Prove relevance before purchase without leaking exact venue details.
-- Let the user pay $4.99 to unlock the exact 3-stop plan.
+- Let the user start Amora Plus or pay $4.99 once to unlock the exact 3-stop plan.
 - Show timing, reasons, cost estimate, and Apple Maps actions after unlock.
 - Keep the OpenAI API key out of the iOS app.
 - Keep location precise enough to be useful without adding a map picker or radius controls.
@@ -90,7 +90,6 @@ Freshness angle:
 - Saved partner profiles.
 - Accounts or login.
 - Cross-device purchase restore beyond StoreKit basics.
-- Subscriptions.
 - Reservations or booking.
 - Exact price guarantees.
 - Full route optimization.
@@ -126,7 +125,7 @@ Location behavior:
 5. App shows anonymized preview concepts.
 6. User can regenerate previews for free.
 7. User taps unlock.
-8. StoreKit presents the $4.99 product.
+8. StoreKit presents Amora Plus as the primary offer and a $4.99 one-plan unlock as the secondary fallback.
 9. Purchase succeeds.
 10. App reveals exact venue names, timing, reasons, cost estimates, and Apple Maps actions.
 11. User can regenerate the exact plan once after unlock.
@@ -176,15 +175,21 @@ The full plan includes:
 
 ## Monetization
 
-Strategic monetization direction:
-
 - Subscription-first positioning.
-- Monthly subscription should become the primary offer because users need fresh plans for different people, moods, and moments.
+- Monthly subscription is the primary offer because users need fresh plans for different people, moods, and moments.
 - One-plan purchase remains useful as a lower-friction fallback for users who only need help with one date.
 
 Current implemented MVP product:
 
-- StoreKit consumable.
+- Primary StoreKit auto-renewable subscription.
+- Name: Amora Plus.
+- Product id: `amora_plus_monthly`.
+- Target price: $9.99/month.
+- Value: unlimited unlocked thoughtful date plans.
+
+Current implemented fallback product:
+
+- Secondary StoreKit consumable.
 - Name: Unlock 1 Thoughtful Date Plan.
 - Product id: `thoughtful_date_plan_unlock_1`.
 - Target price: $4.99.
@@ -193,8 +198,8 @@ Purchase behavior:
 
 - Purchase unlocks the current generated plan.
 - Paid unlock includes 1 exact-plan regenerate.
+- Active Amora Plus subscription unlocks generated plans without consuming one-time regenerates.
 - Failed generation or failed purchase must not charge or unlock.
-- Subscription purchase flow is not implemented yet in the current app build.
 
 ## Backend Requirements
 
@@ -217,6 +222,7 @@ Generation constraints:
 - Make the plan feel specific to the supplied personal details, not like a reusable generic route.
 - Use supplied interests in preview concepts and locked-stop reasons when provided.
 - Avoid plans that could be copy-pasted for different people without changing the personal logic.
+- Estimate costs for two people in the common local currency of the planning area, using broad approximate ranges.
 - Do not promise current events.
 
 Reliability pattern:

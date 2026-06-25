@@ -134,6 +134,7 @@ describe("generateDatePlan", () => {
     expect(body.input).toContain("The partner likes field may contain a clean summary or pasted chat/note context.");
     expect(body.input).toContain("Extract only date-planning signals that are clearly supported by the provided text.");
     expect(body.input).toContain("Do not psychoanalyze, infer sensitive traits, or make claims about the person beyond the provided context.");
+    expect(body.input).toContain("Estimate costs for two people using the common local currency of the planning area.");
     expect(body.input).toContain("Schema contract:");
     expect(body.input).toContain("id: string");
     expect(body.input).toContain("preview.title: string");

@@ -18,10 +18,22 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingPaywall) {
-            PaywallView(purchaseService: purchaseService) { success in
-                viewModel.completePurchase(success: success)
+            PaywallView(purchaseService: purchaseService) { purchase in
+                switch purchase {
+                case .subscription(let success):
+                    viewModel.completeSubscriptionPurchase(success: success)
+                case .onePlan(let success):
+                    viewModel.completePurchase(success: success)
+                }
                 showingPaywall = false
             }
+        }
+        .task {
+            await purchaseService.loadProducts()
+            viewModel.setSubscriptionActive(purchaseService.hasActiveSubscription)
+        }
+        .onChange(of: purchaseService.hasActiveSubscription) { _, isActive in
+            viewModel.setSubscriptionActive(isActive)
         }
     }
 }

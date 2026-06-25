@@ -50,6 +50,46 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
     }
 
+    func testSubscriptionPurchaseUnlocksCurrentPlan() async {
+        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+
+        XCTAssertTrue(viewModel.hasActiveSubscription)
+        XCTAssertTrue(viewModel.isUnlocked)
+        XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
+    }
+
+    func testSubscribedPreviewGeneratesUnlockedPlan() async {
+        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.setSubscriptionActive(true)
+
+        await viewModel.generatePreview()
+
+        XCTAssertTrue(viewModel.hasActiveSubscription)
+        XCTAssertTrue(viewModel.isUnlocked)
+    }
+
+    func testSubscribedRegenerateDoesNotConsumeOneTimeRegenerate() async {
+        var count = 0
+        let viewModel = PlanViewModel(generate: { _ in
+            count += 1
+            return Self.samplePlan(id: "plan_\(count)")
+        })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.regenerateUnlockedPlan()
+
+        XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
+        XCTAssertEqual(viewModel.remainingUnlockedRegenerates, 1)
+        XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
+    }
+
     private static func samplePlan(id: String) -> DatePlanResponse {
         DatePlanResponse(
             id: id,
