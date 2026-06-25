@@ -3,6 +3,7 @@
 ## Thoughtful Date Plan MVP
 
 The approved MVP design is recorded in `docs/superpowers/specs/2026-06-22-thoughtful-date-plan-mvp-design.md`.
+The approved premium reveal app-flow refinement is recorded in `docs/superpowers/specs/2026-06-25-premium-reveal-app-flow-design.md`.
 
 Key decisions:
 
@@ -18,3 +19,5 @@ Key decisions:
 - Gate exact venue details behind a StoreKit consumable paywall.
 - Show free anonymized previews that can regenerate before purchase.
 - Use a schema-validated tool-call recovery pattern for backend plan generation.
+- Use a two-step intake: first ask "What would make her feel seen?" with planning area, then collect vibe, budget, duration, and no-drinking constraints.
+- Present the free preview as a sealed itinerary where each stop shows concept, vibe, reason, and personalization signal while hiding exact paid details.
