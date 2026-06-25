@@ -7,9 +7,27 @@ const validDatePlanResponse = {
     title: "A cozy 2-hour plan near Williamsburg",
     summaryBadges: ["$$", "2 hours", "No bars"],
     stops: [
-      { order: 1, concept: "A cozy conversation starter" },
-      { order: 2, concept: "A personal activity together" },
-      { order: 3, concept: "A gentle final stop" }
+      {
+        order: 1,
+        concept: "A cozy conversation starter",
+        vibe: "Calm and warm",
+        reason: "A low-pressure first stop gives the date room to settle in.",
+        personalizationSignal: "Matches her interest in quiet places."
+      },
+      {
+        order: 2,
+        concept: "A personal activity together",
+        vibe: "Playful and thoughtful",
+        reason: "A shared activity gives them something natural to react to together.",
+        personalizationSignal: "Connects to their interest in bookstores."
+      },
+      {
+        order: 3,
+        concept: "A gentle final stop",
+        vibe: "Sweet and unhurried",
+        reason: "A soft final stop gives the plan a memorable closing moment.",
+        personalizationSignal: "Keeps the night aligned with quiet, cozy preferences."
+      }
     ]
   },
   lockedPlan: {
@@ -100,7 +118,29 @@ describe("DatePlanResponseSchema", () => {
         ...validDatePlanResponse.preview,
         stops: [
           ...validDatePlanResponse.preview.stops,
-          { order: 3, concept: "An extra preview stop" }
+          {
+            order: 3,
+            concept: "An extra preview stop",
+            vibe: "Brief and bright",
+            reason: "An extra stop should still carry the same preview contract.",
+            personalizationSignal: "Reflects the requested quiet, cozy mood."
+          }
+        ]
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects preview stops missing reveal-proof fields", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      preview: {
+        ...validDatePlanResponse.preview,
+        stops: [
+          { order: 1, concept: "A cozy conversation starter" },
+          validDatePlanResponse.preview.stops[1],
+          validDatePlanResponse.preview.stops[2]
         ]
       }
     });

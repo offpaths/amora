@@ -15,7 +15,10 @@ export const GeneratePlanRequestSchema = z.object({
 
 export const PreviewStopSchema = z.object({
   order: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  concept: z.string().trim().min(8).max(160)
+  concept: z.string().trim().min(8).max(160),
+  vibe: z.string().trim().min(4).max(80),
+  reason: z.string().trim().min(12).max(220),
+  personalizationSignal: z.string().trim().min(8).max(220)
 });
 
 const PreviewStopOneSchema = PreviewStopSchema.extend({ order: z.literal(1) });
