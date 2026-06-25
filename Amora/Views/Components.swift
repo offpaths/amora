@@ -149,3 +149,33 @@ struct ItineraryNumber: View {
             .clipShape(Circle())
     }
 }
+
+struct StopIllustrationPanel: View {
+    let systemImage: String
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(AmoraTheme.brass.opacity(0.12))
+            HStack {
+                Image(systemName: "map.fill")
+                    .font(.system(size: 64, weight: .semibold))
+                    .foregroundStyle(AmoraTheme.brass.opacity(0.16))
+                    .offset(x: -10, y: 22)
+                Spacer()
+                Image(systemName: systemImage)
+                    .font(.system(size: 46, weight: .semibold))
+                    .foregroundStyle(AmoraTheme.oxblood)
+                Spacer()
+                Image(systemName: "sparkles")
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundStyle(AmoraTheme.olive.opacity(0.18))
+                    .offset(x: 8, y: -20)
+            }
+            .padding(.horizontal, 24)
+        }
+        .frame(height: 112)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityHidden(true)
+    }
+}
