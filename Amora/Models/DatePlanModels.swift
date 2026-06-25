@@ -43,7 +43,27 @@ struct PlanPreview: Codable, Equatable {
 struct PreviewStop: Codable, Equatable, Identifiable {
     var order: Int
     var concept: String
+    var vibe: String
+    var reason: String
+    var personalizationSignal: String
     var id: Int { order }
+
+    init(order: Int, concept: String, vibe: String, reason: String, personalizationSignal: String) {
+        self.order = order
+        self.concept = concept
+        self.vibe = vibe
+        self.reason = reason
+        self.personalizationSignal = personalizationSignal
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        order = try container.decode(Int.self, forKey: .order)
+        concept = try container.decode(String.self, forKey: .concept)
+        vibe = try container.decodeIfPresent(String.self, forKey: .vibe) ?? ""
+        reason = try container.decodeIfPresent(String.self, forKey: .reason) ?? ""
+        personalizationSignal = try container.decodeIfPresent(String.self, forKey: .personalizationSignal) ?? ""
+    }
 }
 
 struct LockedPlan: Codable, Equatable {

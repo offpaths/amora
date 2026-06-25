@@ -57,9 +57,27 @@ final class PlanViewModelTests: XCTestCase {
                 title: "A cozy 2-hour plan near Williamsburg",
                 summaryBadges: ["$$", "2 hours", "No bars"],
                 stops: [
-                    PreviewStop(order: 1, concept: "A cozy conversation starter"),
-                    PreviewStop(order: 2, concept: "A personal activity"),
-                    PreviewStop(order: 3, concept: "A relaxed dessert finish")
+                    PreviewStop(
+                        order: 1,
+                        concept: "A cozy conversation starter",
+                        vibe: "Calm and warm",
+                        reason: "A low-pressure first stop gives the date room to settle in.",
+                        personalizationSignal: "Matches her interest in quiet places."
+                    ),
+                    PreviewStop(
+                        order: 2,
+                        concept: "A personal activity",
+                        vibe: "Playful and personal",
+                        reason: "A shared activity creates easy momentum.",
+                        personalizationSignal: "Connects to her creative side."
+                    ),
+                    PreviewStop(
+                        order: 3,
+                        concept: "A relaxed dessert finish",
+                        vibe: "Sweet and unhurried",
+                        reason: "A gentle final stop leaves space to linger.",
+                        personalizationSignal: "Fits the requested cozy ending."
+                    )
                 ]
             ),
             lockedPlan: LockedPlan(
