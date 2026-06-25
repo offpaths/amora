@@ -9,6 +9,8 @@ Refine Amora's MVP flow so it feels more considerate, premium, and emotionally s
 
 The new flow should make the user feel that Amora is listening before it configures logistics. The free preview should prove that a thoughtful itinerary exists without revealing the paid details.
 
+The app should also make the user feel that the outcome he wants is more likely because he is showing up with a better plan. The product should create confidence that the date will feel smoother, more intentional, and more personal. It must not promise romantic results or imply that a plan can control another person's feelings.
+
 ## Product Direction
 
 Use a two-step intake followed by a sealed itinerary preview.
@@ -22,6 +24,12 @@ Helper copy should make that prompt concrete:
 > Tell us what she likes, notices, avoids, or has mentioned lately.
 
 This keeps the screen emotionally resonant without becoming vague or overly sentimental.
+
+The confidence message underneath the flow is:
+
+> Your chances are better when the night feels considered.
+
+This should guide tone, hierarchy, and paywall framing without becoming an explicit guarantee.
 
 ## Flow
 
@@ -90,6 +98,8 @@ The paywall should frame purchase as revealing a prepared itinerary, not buying 
 
 The paywall should emphasize:
 
+- More confidence going into the date.
+- A smoother night with less guesswork.
 - Exact venues.
 - Timing per stop.
 - Reasons tied to her interests.
