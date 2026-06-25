@@ -130,12 +130,15 @@ describe("generateDatePlan", () => {
     expect(body.input).toContain("Planning area: Williamsburg, Brooklyn.");
     expect(body.input).toContain("Budget tier: $$.");
     expect(body.input).toContain("No drinking: yes, avoid alcohol-centered stops.");
-    expect(body.input).toContain("Partner likes: bookstores, matcha, quiet places.");
+    expect(body.input).toContain("Partner likes or pasted context: bookstores, matcha, quiet places.");
+    expect(body.input).toContain("The partner likes field may contain a clean summary or pasted chat/note context.");
+    expect(body.input).toContain("Extract only date-planning signals that are clearly supported by the provided text.");
+    expect(body.input).toContain("Do not psychoanalyze, infer sensitive traits, or make claims about the person beyond the provided context.");
     expect(body.input).toContain("Schema contract:");
     expect(body.input).toContain("id: string");
     expect(body.input).toContain("preview.title: string");
     expect(body.input).toContain("preview.summaryBadges: string[]");
-    expect(body.input).toContain("preview.stops: exactly 3 objects with order 1, 2, 3 and concept");
+    expect(body.input).toContain("preview.stops: exactly 3 objects with order 1, 2, 3, concept, vibe, reason, personalizationSignal");
     expect(body.input).toContain("lockedPlan.totalEstimatedCost: string");
     expect(body.input).toContain(
       "lockedPlan.stops: exactly 3 objects with order 1, 2, 3, venueName, address, appleMapsQuery, durationMinutes, reason, estimatedCost"
