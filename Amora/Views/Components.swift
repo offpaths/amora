@@ -154,6 +154,7 @@ struct LoadingPlanView: View {
 
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 28)
         .amoraScreen()
     }

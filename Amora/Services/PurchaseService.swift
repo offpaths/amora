@@ -25,11 +25,17 @@ final class PurchaseService: ObservableObject {
     }
 
     func purchaseUnlock() async -> Bool {
+        if unlockProduct == nil {
+            await loadProducts()
+        }
         guard let unlockProduct else { return false }
         return await purchase(unlockProduct)
     }
 
     func purchasePlusMonthly() async -> Bool {
+        if plusMonthlyProduct == nil {
+            await loadProducts()
+        }
         guard let plusMonthlyProduct else { return false }
         let success = await purchase(plusMonthlyProduct)
         if success {

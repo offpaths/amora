@@ -55,9 +55,11 @@ struct PreviewPlanView: View {
                     }
                     .disabled(viewModel.isLoading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .amoraScreen()
         } else {
             InputView(viewModel: viewModel)
