@@ -13,7 +13,7 @@ struct PreviewPlanView: View {
 
                     FlowBadges(badges: plan.preview.summaryBadges)
 
-                    Text("Built around the details you gave, so this does not feel like a recycled date.")
+                    Text("Your sealed itinerary is ready. Exact venues, timing, costs, and maps unlock when you reveal the full plan.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
@@ -25,7 +25,13 @@ struct PreviewPlanView: View {
                                     .foregroundStyle(.secondary)
                                 Text(stop.concept)
                                     .font(.headline)
-                                Label("Exact venue, timing, cost, and personal reasons unlock after purchase", systemImage: "lock.fill")
+                                PillLabel(text: stop.vibe)
+                                Text(stop.reason)
+                                    .font(.subheadline)
+                                Text(stop.personalizationSignal)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Label("Exact venue, timing, cost, and maps unlock after purchase", systemImage: "lock.fill")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -36,7 +42,7 @@ struct PreviewPlanView: View {
                         }
                     }
 
-                    Button("Unlock Full Plan", action: onUnlock)
+                    Button("Reveal Full Plan", action: onUnlock)
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
 

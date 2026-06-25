@@ -6,18 +6,19 @@ struct PaywallView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Unlock 1 Thoughtful Date Plan")
+            Text("Reveal Your Full Date Plan")
                 .font(.largeTitle.bold())
 
-            Text("Make the money you are already spending on the date worth it with a plan built around this person, not a copy-pasted night out.")
+            Text("Walk in with more confidence and less guesswork. Reveal the exact venues, timing, and reasons behind a plan built to feel considered.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 12) {
+                Label("More confidence going into the date", systemImage: "checkmark.seal")
+                Label("A smoother night with less guesswork", systemImage: "sparkles")
                 Label("Exact venues", systemImage: "mappin.and.ellipse")
                 Label("Timing per stop", systemImage: "clock")
-                Label("Reasons that match their interests", systemImage: "heart")
-                Label("Fresh plan for this person and moment", systemImage: "sparkles")
+                Label("Reasons tied to what she likes", systemImage: "heart")
                 Label("Estimated cost", systemImage: "dollarsign.circle")
                 Label("Apple Maps actions", systemImage: "map")
             }
