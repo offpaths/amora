@@ -20,5 +20,5 @@ Key decisions:
 - Show free anonymized previews that can regenerate before purchase.
 - Use a schema-validated tool-call recovery pattern for backend plan generation.
 - Use a two-step intake: first ask "What would make her feel seen?" with planning area, then collect vibe, budget, duration, and no-drinking constraints.
-- Support pasted chat or note context in the personal-anchor step; screenshot and photo analysis are future extension points, not part of the current build.
+- Use one personal-anchor text field that accepts either a written summary or pasted chat/note context; screenshot and photo analysis are future extension points, not part of the current build.
 - Present the free preview as a sealed itinerary where each stop shows concept, vibe, reason, and personalization signal while hiding exact paid details.

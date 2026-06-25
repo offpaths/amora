@@ -40,18 +40,15 @@ The first screen asks what would make the date feel thoughtful for this person.
 Required elements:
 
 - Headline: "What would make her feel seen?"
-- Helper text: "Tell us what she likes, notices, avoids, or has mentioned lately."
-- Multiline text field for the user's answer.
-- Optional pasted chat or note context.
+- Helper text: "Tell us what she likes, notices, avoids, or paste a message or note you want us to consider."
+- Multiline text field for the user's answer, pasted chat, or note context.
 - Editable "Plan near" area label.
 - Use current location action.
 - Continue button.
 
 The planning area belongs on this screen because it grounds the personal anchor in a real place without making logistics feel like the main event.
 
-For the current implementation, richer context is limited to pasted text. The user may paste chat excerpts, notes, or other text context that helps explain what she likes or avoids. Screenshot and photo analysis should be designed as a future extension point, but they are out of scope for the current build.
-
-If pasted context is processed separately from the main personal-answer field, Amora should summarize the extracted signals for user confirmation before generation. This keeps the feature useful without making the app feel like a black-box interpretation of someone else's private messages.
+For the current implementation, do not add a separate context field. The same text field accepts either a clean summary from the user or pasted chat/note context. Screenshot upload, photo analysis, and separate extracted-signal confirmation should be designed as future extension points, but they are out of scope for the current build.
 
 ### Step 2: Shape The Night
 
@@ -159,7 +156,7 @@ Implementation should verify:
 - Step 2 can collect constraints and generate a preview.
 - Back navigation preserves entered values.
 - Preview renders the new stop vibe, reason, and personalization signal.
-- Pasted chat or note context can contribute to generation without requiring photo or screenshot upload.
+- The personal-anchor field accepts either a written summary or pasted chat/note context without requiring photo or screenshot upload.
 - Purchase still unlocks the current plan.
 - Regeneration still resets and preserves unlock behavior as intended.
 - Backend schema accepts and returns the new preview fields.
