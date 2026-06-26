@@ -9,7 +9,8 @@ const validRequest: GeneratePlanRequest = {
   vibe: "cozy",
   noDrinking: true,
   durationMinutes: 120,
-  partnerLikes: "bookstores, matcha, quiet places"
+  partnerLikes: "bookstores, matcha, quiet places",
+  regenerationAttempt: 0
 };
 
 const validPlan: DatePlanResponse = {

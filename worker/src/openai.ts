@@ -97,6 +97,10 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     `Vibe: ${input.vibe}.`,
     `Duration: ${input.durationMinutes} minutes.`,
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,
+    `Regeneration attempt: ${input.regenerationAttempt}.`,
+    input.regenerationAttempt > 0
+      ? "This is a regenerated plan. Keep the same user preferences, area, budget, and constraints, but produce a meaningfully different itinerary from a typical first answer: use different venue choices, a different stop sequence, and different preview concepts where possible. Do not simply reword the same plan."
+      : "This is the first generated plan for these inputs.",
     `Partner likes or pasted context: ${input.partnerLikes || "not provided"}.`,
     "The partner likes field may contain a clean summary or pasted chat/note context.",
     "Extract only date-planning signals that are clearly supported by the provided text.",

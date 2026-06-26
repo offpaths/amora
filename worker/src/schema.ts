@@ -10,7 +10,8 @@ export const GeneratePlanRequestSchema = z.object({
   vibe: VibeSchema,
   noDrinking: z.boolean(),
   durationMinutes: DurationMinutesSchema,
-  partnerLikes: z.string().trim().max(500).optional().default("")
+  partnerLikes: z.string().trim().max(500).optional().default(""),
+  regenerationAttempt: z.number().int().min(0).max(20).optional().default(0)
 });
 
 export const PreviewStopSchema = z.object({

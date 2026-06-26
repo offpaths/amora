@@ -26,6 +26,7 @@ struct GeneratePlanRequest: Codable, Equatable {
     var noDrinking: Bool
     var durationMinutes: Int
     var partnerLikes: String
+    var regenerationAttempt: Int = 0
 }
 
 struct DatePlanResponse: Codable, Equatable, Identifiable {

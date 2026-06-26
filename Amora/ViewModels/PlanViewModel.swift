@@ -17,6 +17,7 @@ final class PlanViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let generate: (GeneratePlanRequest) async throws -> DatePlanResponse
+    private var regenerationAttempt = 0
 
     init(generate: @escaping (GeneratePlanRequest) async throws -> DatePlanResponse = {
         try await DatePlanClient(baseURL: AppConfig.backendBaseURL).generatePlan($0)
@@ -72,6 +73,7 @@ final class PlanViewModel: ObservableObject {
         if !hasActiveSubscription {
             remainingUnlockedRegenerates -= 1
         }
+        regenerationAttempt += 1
         await generatePreview()
         isUnlocked = true
     }
@@ -83,7 +85,8 @@ final class PlanViewModel: ObservableObject {
             vibe: vibe,
             noDrinking: noDrinking,
             durationMinutes: durationMinutes,
-            partnerLikes: partnerLikes
+            partnerLikes: partnerLikes,
+            regenerationAttempt: regenerationAttempt
         )
     }
 }

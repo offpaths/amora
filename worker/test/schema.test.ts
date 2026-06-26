@@ -76,6 +76,9 @@ describe("GeneratePlanRequestSchema", () => {
     });
 
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.regenerationAttempt).toBe(0);
+    }
   });
 
   it("rejects unsupported durations", () => {

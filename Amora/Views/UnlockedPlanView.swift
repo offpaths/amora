@@ -57,7 +57,7 @@ struct UnlockedPlanView: View {
                     }
 
                     if viewModel.canRegenerateUnlockedPlan {
-                        PrimaryButton(title: "Regenerate Once", isLoading: viewModel.isLoading) {
+                        PrimaryButton(title: viewModel.hasActiveSubscription ? "Regenerate Plan" : "Regenerate Once", isLoading: viewModel.isLoading) {
                             Task { await viewModel.regenerateUnlockedPlan() }
                         }
                     }

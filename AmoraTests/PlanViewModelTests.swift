@@ -35,7 +35,9 @@ final class PlanViewModelTests: XCTestCase {
 
     func testRegenerateUnlockedPlanConsumesOneRegenerate() async {
         var count = 0
-        let viewModel = PlanViewModel(generate: { _ in
+        var requests: [GeneratePlanRequest] = []
+        let viewModel = PlanViewModel(generate: { request in
+            requests.append(request)
             count += 1
             return Self.samplePlan(id: "plan_\(count)")
         })
@@ -46,6 +48,7 @@ final class PlanViewModelTests: XCTestCase {
         await viewModel.regenerateUnlockedPlan()
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
+        XCTAssertEqual(requests.map(\.regenerationAttempt), [0, 1])
         XCTAssertTrue(viewModel.isUnlocked)
         XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
     }

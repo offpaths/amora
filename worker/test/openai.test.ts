@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
+import { buildPrompt, buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
 import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
@@ -8,7 +8,8 @@ const validRequest: GeneratePlanRequest = {
   vibe: "cozy",
   noDrinking: true,
   durationMinutes: 120,
-  partnerLikes: "bookstores, matcha, quiet places"
+  partnerLikes: "bookstores, matcha, quiet places",
+  regenerationAttempt: 0
 };
 
 const validPlan: DatePlanResponse = {
@@ -130,6 +131,8 @@ describe("generateDatePlan", () => {
     expect(body.input).toContain("Planning area: Williamsburg, Brooklyn.");
     expect(body.input).toContain("Budget tier: $$.");
     expect(body.input).toContain("No drinking: yes, avoid alcohol-centered stops.");
+    expect(body.input).toContain("Regeneration attempt: 0.");
+    expect(body.input).toContain("This is the first generated plan for these inputs.");
     expect(body.input).toContain("Partner likes or pasted context: bookstores, matcha, quiet places.");
     expect(body.input).toContain("The partner likes field may contain a clean summary or pasted chat/note context.");
     expect(body.input).toContain("Extract only date-planning signals that are clearly supported by the provided text.");
@@ -146,6 +149,15 @@ describe("generateDatePlan", () => {
     );
     expect(body.input).toContain("No markdown. No prose outside JSON.");
     expect(body.input).toContain("Return exactly 3 preview stops and exactly 3 locked stops.");
+  });
+
+  it("asks for a meaningfully different itinerary on regeneration", () => {
+    const prompt = buildPrompt({ ...validRequest, regenerationAttempt: 1 });
+
+    expect(prompt).toContain("Regeneration attempt: 1.");
+    expect(prompt).toContain("This is a regenerated plan.");
+    expect(prompt).toContain("use different venue choices, a different stop sequence, and different preview concepts");
+    expect(prompt).toContain("Do not simply reword the same plan.");
   });
 
   it("continues scanning raw text candidates until it finds valid output JSON", async () => {
