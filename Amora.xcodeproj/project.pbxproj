@@ -24,6 +24,8 @@
 		A10000000000000000000015 /* PreviewPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* PreviewPlanView.swift */; };
 		A10000000000000000000016 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* PaywallView.swift */; };
 		A10000000000000000000017 /* UnlockedPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* UnlockedPlanView.swift */; };
+		A10000000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* Assets.xcassets */; };
+		A10000000000000000000019 /* TelemetryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* TelemetryClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,7 +46,6 @@
 		A20000000000000000000005 /* DatePlanModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePlanModelsTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* Amora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Amora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000007 /* AmoraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AmoraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A20000000000000000000008 /* Amora.storekit */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Amora.storekit; sourceTree = "<group>"; };
 		A20000000000000000000009 /* DatePlanClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePlanClient.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* DatePlanClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePlanClientTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* LocationLabelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationLabelService.swift; sourceTree = "<group>"; };
@@ -57,11 +58,26 @@
 		A20000000000000000000018 /* PreviewPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPlanView.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		A20000000000000000000020 /* UnlockedPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockedPlanView.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000022 /* TelemetryClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryClient.swift; sourceTree = "<group>"; };
+		E7D9FC242FF00907004E9C09 /* Amora.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Amora.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -80,6 +96,7 @@
 			children = (
 				A20000000000000000000001 /* AmoraApp.swift */,
 				A20000000000000000000002 /* ContentView.swift */,
+				A20000000000000000000021 /* Assets.xcassets */,
 				A40000000000000000000003 /* Config */,
 				A40000000000000000000004 /* Models */,
 				A40000000000000000000008 /* Services */,
@@ -119,7 +136,7 @@
 		A40000000000000000000006 /* StoreKit */ = {
 			isa = PBXGroup;
 			children = (
-				A20000000000000000000008 /* Amora.storekit */,
+				E7D9FC242FF00907004E9C09 /* Amora.storekit */,
 			);
 			path = StoreKit;
 			sourceTree = "<group>";
@@ -139,6 +156,7 @@
 				A20000000000000000000009 /* DatePlanClient.swift */,
 				A20000000000000000000011 /* LocationLabelService.swift */,
 				A20000000000000000000015 /* PurchaseService.swift */,
+				A20000000000000000000022 /* TelemetryClient.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -240,8 +258,21 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A70000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		A70000000000000000000002 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A70000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000018 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A70000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -257,6 +288,7 @@
 				A10000000000000000000008 /* LocationLabelService.swift in Sources */,
 				A10000000000000000000010 /* PlanViewModel.swift in Sources */,
 				A10000000000000000000012 /* PurchaseService.swift in Sources */,
+				A10000000000000000000019 /* TelemetryClient.swift in Sources */,
 				A10000000000000000000013 /* Components.swift in Sources */,
 				A10000000000000000000014 /* InputView.swift in Sources */,
 				A10000000000000000000015 /* PreviewPlanView.swift in Sources */,
@@ -279,7 +311,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		A80000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A50000000000000000000001 /* Amora */; targetProxy = A80000000000000000000002 /* PBXContainerItemProxy */; };
+		A80000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* Amora */;
+			targetProxy = A80000000000000000000002 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -311,6 +347,7 @@
 		A91000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -333,6 +370,7 @@
 		A91000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

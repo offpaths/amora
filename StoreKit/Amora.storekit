@@ -1,6 +1,15 @@
 {
-  "appName" : "Amora",
-  "identifier" : "Amora",
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "7D97E72E",
   "nonRenewingSubscriptions" : [
 
   ],
@@ -8,7 +17,7 @@
     {
       "displayPrice" : "4.99",
       "familyShareable" : false,
-      "internalID" : "C361E4D9-2DF4-4C80-99E2-D03060E5BFBD",
+      "internalID" : "1990C089",
       "localizations" : [
         {
           "description" : "Unlock the exact 3-stop thoughtful date plan.",
@@ -17,21 +26,29 @@
         }
       ],
       "productID" : "thoughtful_date_plan_unlock_1",
-      "referenceName" : "Unlock 1 Thoughtful Date Plan",
+      "referenceName" : "Unlock 1 Thoughful Date Plan",
       "type" : "Consumable"
     }
   ],
   "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
 
+    ],
+    "_timeRate" : 0
   },
   "subscriptionGroups" : [
     {
-      "id" : "209E7447-6077-4799-AEB3-FE63EA53EF09",
+      "id" : "35CD3703",
       "localizations" : [
-        {
-          "locale" : "en_US",
-          "name" : "Amora Plus"
-        }
+
       ],
       "name" : "Amora Plus",
       "subscriptions" : [
@@ -39,14 +56,25 @@
           "adHocOffers" : [
 
           ],
+          "billingPlans" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "commitmentDisplayPrice" : "0.99",
+              "displayPrice" : "0.99",
+              "internalID" : "F15246DB",
+              "isEnabled" : true
+            }
+          ],
           "codeOffers" : [
 
           ],
           "displayPrice" : "9.99",
           "familyShareable" : false,
           "groupNumber" : 1,
-          "internalID" : "FF2E4051-84B8-45C5-8559-C603CCBB77BB",
-          "introductoryOffer" : null,
+          "internalID" : "975FDBB4",
+          "introductoryOffers" : [
+
+          ],
           "localizations" : [
             {
               "description" : "Unlimited unlocked thoughtful date plans.",
@@ -57,14 +85,17 @@
           "productID" : "amora_plus_monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Amora Plus Monthly",
-          "subscriptionGroupID" : "209E7447-6077-4799-AEB3-FE63EA53EF09",
-          "type" : "RecurringSubscription"
+          "subscriptionGroupID" : "35CD3703",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }
   ],
   "version" : {
-    "major" : 4,
+    "major" : 5,
     "minor" : 0
   }
 }

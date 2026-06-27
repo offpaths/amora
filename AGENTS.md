@@ -13,4 +13,6 @@
 - Budget input should be a practical local-currency spend comfort for the full date for two people, not a date-quality or impressiveness ladder.
 - Typed planning-area suggestions should stay lightweight and optional; do not force map/radius selection in the MVP.
 - Product and marketing should warn against recycled/copy-pasted dates by making personalization the value.
+- AI data-use consent should appear as a one-time screen immediately after the opening loading screen and before the intake form, with reassuring copy that the shared context is used to make a thoughtful, specific plan.
+- Telemetry is first-party, optional, and limited to funnel/reliability events with coarse properties; do not log raw personal anchors, exact typed locations, exact coordinates, addresses, venue names, or generated plan text.
 - Current event discovery, Google Places, saved profiles, and accounts are out of scope for the MVP.

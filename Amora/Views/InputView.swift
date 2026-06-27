@@ -38,7 +38,7 @@ struct InputView: View {
                 .padding(.vertical, 24)
             }
             .scrollContentBackground(.hidden)
-            .navigationTitle(step == 1 ? "" : "Shape the night")
+            .navigationTitle(navigationTitle)
             .toolbarBackground(AmoraTheme.background, for: .navigationBar)
             .toolbar {
                 if step == 1 {
@@ -137,14 +137,18 @@ struct InputView: View {
             returnToExistingPlanButton
 
             PrimaryButton(title: "Continue", isLoading: false) {
+                viewModel.recordIntakeStepViewed(2)
                 step = 2
             }
+
+            AnalyticsPrivacyToggle()
         }
     }
 
     private var shapeTheNightStep: some View {
         VStack(alignment: .leading, spacing: 16) {
             Button {
+                viewModel.recordIntakeStepViewed(1)
                 step = 1
             } label: {
                 Label("Back", systemImage: "chevron.left")
@@ -220,8 +224,6 @@ struct InputView: View {
                 }
             }
 
-            aiDisclosureCard
-
             errorMessageView
 
             returnToExistingPlanButton
@@ -246,32 +248,21 @@ struct InputView: View {
         }
     }
 
-    private var aiDisclosureCard: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Toggle(isOn: $viewModel.hasAcceptedAIDisclosure) {
-                    Text("Amora uses AI to create your plan. Your planning area, preferences, and personal context are sent to our AI provider to generate the result.")
-                        .font(.subheadline)
-                        .foregroundStyle(AmoraTheme.ink)
-                }
-                .tint(AmoraTheme.oxblood)
-
-                HStack(spacing: 14) {
-                    Link("Privacy", destination: AppConfig.privacyPolicyURL)
-                    Link("Terms", destination: AppConfig.termsOfUseURL)
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(AmoraTheme.oxblood)
-            }
-        }
-    }
-
     @ViewBuilder
     private var errorMessageView: some View {
         if let errorMessage = viewModel.errorMessage {
             Text(errorMessage)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(AmoraTheme.oxblood)
+        }
+    }
+
+    private var navigationTitle: String {
+        switch step {
+        case 1:
+            return ""
+        default:
+            return "Shape the night"
         }
     }
 
@@ -313,7 +304,7 @@ struct InputView: View {
         locationService.requestPermission()
         do {
             if let area = try await locationService.currentPlanningArea(), !area.label.isEmpty {
-                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
+                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode, source: "current_location")
             }
         } catch {
             viewModel.errorMessage = "We could not detect your area. Enter it manually."
@@ -323,7 +314,7 @@ struct InputView: View {
     private func useSuggestion(_ suggestion: MKLocalSearchCompletion) async {
         do {
             if let area = try await locationSuggestionService.planningArea(for: suggestion) {
-                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
+                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode, source: "suggestion")
             } else {
                 viewModel.setPlanningArea(label: locationSuggestionService.label(for: suggestion), countryCode: "")
                 viewModel.errorMessage = "Choose a suggested area or enter a more specific city and country."
@@ -342,7 +333,7 @@ struct InputView: View {
 
         do {
             if let area = try await locationService.planningArea(for: viewModel.locationLabel) {
-                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
+                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode, source: "typed")
                 viewModel.errorMessage = nil
             } else {
                 viewModel.errorMessage = "Choose a suggested area or enter a more specific city and country."

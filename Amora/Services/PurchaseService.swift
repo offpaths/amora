@@ -9,6 +9,7 @@ final class PurchaseService: ObservableObject {
     @Published private(set) var hasActiveSubscription = false
     @Published private(set) var isLoadingProducts = false
     @Published private(set) var didLoadProducts = false
+    @Published private(set) var isRestoringPurchases = false
 
     func loadProduct() async {
         await loadProducts()
@@ -67,6 +68,19 @@ final class PurchaseService: ObservableObject {
         }
 
         hasActiveSubscription = isActive
+    }
+
+    func restorePurchases() async {
+        isRestoringPurchases = true
+        defer { isRestoringPurchases = false }
+
+        do {
+            try await AppStore.sync()
+        } catch {
+            // Keep restore user-driven and non-fatal; entitlement refresh below reflects final state.
+        }
+
+        await refreshSubscriptionStatus()
     }
 
     private func purchase(_ product: Product) async -> Bool {

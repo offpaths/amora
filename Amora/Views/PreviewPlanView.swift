@@ -3,6 +3,7 @@ import SwiftUI
 struct PreviewPlanView: View {
     @ObservedObject var viewModel: PlanViewModel
     let onUnlock: () -> Void
+    let onEditPreferences: () -> Void
 
     var body: some View {
         if let plan = viewModel.currentPlan {
@@ -14,7 +15,7 @@ struct PreviewPlanView: View {
 
                     FlowBadges(badges: plan.preview.summaryBadges)
 
-                    Text("Your sealed itinerary is ready. Exact venues, timing, costs, and maps unlock when you reveal the full plan.")
+                    Text("Your date plan is ready. Exact venues, timing, costs, and maps unlock when you reveal the full plan.")
                         .font(.subheadline)
                         .foregroundStyle(AmoraTheme.muted)
 
@@ -49,6 +50,8 @@ struct PreviewPlanView: View {
                     }
 
                     PrimaryButton(title: "Reveal Full Plan", isLoading: false, action: onUnlock)
+
+                    SecondaryButton("Edit Preferences", systemImage: "slider.horizontal.3", action: onEditPreferences)
 
                     SecondaryButton("Make It Feel Different", systemImage: "arrow.clockwise") {
                         Task { await viewModel.generatePreview() }

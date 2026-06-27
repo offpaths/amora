@@ -11,6 +11,22 @@ enum AmoraTheme {
     static let border = Color(red: 0.890, green: 0.847, blue: 0.792)
 }
 
+extension Text {
+    static func amoraBrand(_ text: String, baseColor: Color) -> Text {
+        let parts = text.components(separatedBy: "Amora")
+        var styledText = Text(parts.first ?? "")
+            .foregroundStyle(baseColor)
+
+        for part in parts.dropFirst() {
+            styledText = styledText
+                + Text("Amora").foregroundStyle(AmoraTheme.oxblood)
+                + Text(part).foregroundStyle(baseColor)
+        }
+
+        return styledText
+    }
+}
+
 struct ScreenBackground: ViewModifier {
     func body(content: Content) -> some View {
         ZStack {
@@ -72,6 +88,7 @@ struct PillLabel: View {
 struct PrimaryButton: View {
     let title: String
     let isLoading: Bool
+    var isDisabled = false
     let action: () -> Void
 
     var body: some View {
@@ -91,8 +108,8 @@ struct PrimaryButton: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .disabled(isLoading)
-        .opacity(isLoading ? 0.72 : 1)
+        .disabled(isLoading || isDisabled)
+        .opacity(isLoading || isDisabled ? 0.72 : 1)
     }
 }
 
@@ -130,7 +147,32 @@ struct SecondaryButton: View {
     }
 }
 
+struct OpeningLoadingView: View {
+    var body: some View {
+        Image("AmoraOpeningLoading")
+            .resizable()
+            .scaledToFill()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
+            .accessibilityLabel("Amora")
+    }
+}
+
 struct LoadingPlanView: View {
+    static let statusMessages = [
+        "Learning her preferences",
+        "Scouting nearby locations",
+        "Matching to your constraints",
+        "Finalising your plan"
+    ]
+    static let statusMessageIntervalNanoseconds: UInt64 = 3_000_000_000
+
+    static func nextStatusMessageIndex(after currentIndex: Int) -> Int {
+        min(currentIndex + 1, statusMessages.count - 1)
+    }
+
+    @State private var statusMessageIndex = 0
+
     var body: some View {
         VStack(spacing: 28) {
             Spacer()
@@ -146,21 +188,31 @@ struct LoadingPlanView: View {
             }
 
             VStack(spacing: 10) {
-                Text("Amora is working")
+                Text.amoraBrand("Amora is working", baseColor: AmoraTheme.ink)
                     .font(.system(.title, design: .serif, weight: .bold))
-                    .foregroundStyle(AmoraTheme.ink)
 
-                Text("Building a sealed plan around the area, vibe, and details you shared.")
+                Text(Self.statusMessages[statusMessageIndex])
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(AmoraTheme.muted)
                     .frame(maxWidth: 310)
+                    .id(statusMessageIndex)
+                    .transition(.opacity)
             }
 
             Spacer()
         }
         .padding(.horizontal, 28)
         .amoraScreen()
+        .task {
+            while !Task.isCancelled && statusMessageIndex < Self.statusMessages.count - 1 {
+                try? await Task.sleep(nanoseconds: Self.statusMessageIntervalNanoseconds)
+                guard !Task.isCancelled else { break }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    statusMessageIndex = Self.nextStatusMessageIndex(after: statusMessageIndex)
+                }
+            }
+        }
     }
 }
 
@@ -172,6 +224,18 @@ struct FlowBadges: View {
             ForEach(badges, id: \.self) { badge in
                 PillLabel(text: badge, tint: AmoraTheme.olive)
             }
+        }
+    }
+}
+
+struct AnalyticsPrivacyToggle: View {
+    @AppStorage(TelemetryClient.analyticsEnabledKey) private var isAnalyticsEnabled = true
+
+    var body: some View {
+        SurfaceCard {
+            Toggle("Share app analytics", isOn: $isAnalyticsEnabled)
+                .font(.subheadline.weight(.semibold))
+                .tint(AmoraTheme.oxblood)
         }
     }
 }

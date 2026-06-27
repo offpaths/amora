@@ -3,6 +3,18 @@ import XCTest
 
 @MainActor
 final class PlanViewModelTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        UserDefaults.standard.removeObject(forKey: "hasAcceptedAIDisclosure")
+        UserDefaults.standard.removeObject(forKey: TelemetryClient.analyticsEnabledKey)
+    }
+
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: "hasAcceptedAIDisclosure")
+        UserDefaults.standard.removeObject(forKey: TelemetryClient.analyticsEnabledKey)
+        super.tearDown()
+    }
+
     func testDefaultInputsMatchMVPDefaults() {
         let viewModel = PlanViewModel()
 

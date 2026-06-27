@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UnlockedPlanView: View {
     @ObservedObject var viewModel: PlanViewModel
+    let onPlanNewDate: () -> Void
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -24,11 +25,21 @@ struct UnlockedPlanView: View {
                                         VStack(alignment: .leading, spacing: 10) {
                                             Text(stop.venueName)
                                                 .font(.title3.weight(.bold))
+                                                .fixedSize(horizontal: false, vertical: true)
                                             Text(stop.address)
                                                 .font(.caption)
                                                 .foregroundStyle(AmoraTheme.muted)
-                                            Text(stop.reason)
-                                                .font(.subheadline)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Why this fits")
+                                                    .font(.caption.weight(.semibold))
+                                                    .foregroundStyle(AmoraTheme.olive)
+                                                Text(stop.reason)
+                                                    .font(.subheadline)
+                                                    .foregroundStyle(AmoraTheme.ink)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .leading)
                                             HStack {
                                                 PillLabel(text: "\(stop.durationMinutes) min", tint: AmoraTheme.brass)
                                                 PillLabel(text: stop.estimatedCost, tint: AmoraTheme.olive)
@@ -50,16 +61,22 @@ struct UnlockedPlanView: View {
                                             }
                                             .buttonStyle(.plain)
                                         }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                 }
                             }
                         }
                     }
 
-                    if viewModel.canRegenerateUnlockedPlan {
-                        PrimaryButton(title: viewModel.hasActiveSubscription ? "Regenerate Plan" : "Regenerate Once", isLoading: viewModel.isLoading) {
+                    if viewModel.isUnlocked {
+                        PrimaryButton(
+                            title: viewModel.refinePlanButtonTitle,
+                            isLoading: viewModel.isLoading,
+                            isDisabled: viewModel.isRefinePlanDisabled
+                        ) {
                             Task { await viewModel.regenerateUnlockedPlan() }
                         }
+                        SecondaryButton("Plan a New Date", systemImage: "plus", action: onPlanNewDate)
                     }
                 }
                 .padding(.horizontal, 20)
