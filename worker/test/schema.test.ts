@@ -129,10 +129,27 @@ describe("GeneratePlanRequestSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects invalid budget amounts", () => {
+  it("accepts free budget amounts", () => {
     const result = GeneratePlanRequestSchema.safeParse({
       locationLabel: "Williamsburg, Brooklyn",
       budgetAmount: 0,
+      countryCode: "US",
+      vibe: "cozy",
+      noDrinking: true,
+      durationMinutes: 120,
+      partnerLikes: ""
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.budgetAmount).toBe(0);
+    }
+  });
+
+  it("rejects invalid budget amounts", () => {
+    const result = GeneratePlanRequestSchema.safeParse({
+      locationLabel: "Williamsburg, Brooklyn",
+      budgetAmount: -1,
       countryCode: "US",
       vibe: "cozy",
       noDrinking: true,

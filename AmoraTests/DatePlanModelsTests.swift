@@ -4,26 +4,26 @@ import XCTest
 final class DatePlanModelsTests: XCTestCase {
     func testBudgetOptionsUseCountryCurrency() {
         let usOptions = BudgetCatalog.options(for: "US")
-        XCTAssertEqual(usOptions.map(\.label), ["USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
-        XCTAssertEqual(usOptions.map(\.amount), [50, 100, 150, 200, 300])
+        XCTAssertEqual(usOptions.map(\.label), ["Free", "USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
+        XCTAssertEqual(usOptions.map(\.amount), [0, 50, 100, 150, 200, 300])
 
         let thailandOptions = BudgetCatalog.options(for: "TH")
-        XCTAssertEqual(thailandOptions.map(\.label), ["THB 1000", "THB 2000", "THB 3500", "THB 5000", "THB 8000+"])
-        XCTAssertEqual(thailandOptions.map(\.amount), [1000, 2000, 3500, 5000, 8000])
+        XCTAssertEqual(thailandOptions.map(\.label), ["Free", "THB 1000", "THB 2000", "THB 3500", "THB 5000", "THB 8000+"])
+        XCTAssertEqual(thailandOptions.map(\.amount), [0, 1000, 2000, 3500, 5000, 8000])
     }
 
     func testBudgetOptionsFallbackToUSD() {
         let options = BudgetCatalog.options(for: "")
 
         XCTAssertEqual(options.first?.currencyCode, "USD")
-        XCTAssertEqual(options.first?.amount, 50)
+        XCTAssertEqual(options.first?.amount, 0)
     }
 
     func testBudgetOptionsFallbackToUSDWhenCurrencyHasNoLocalSteps() {
         let options = BudgetCatalog.options(for: "JP")
 
-        XCTAssertEqual(options.map(\.label), ["USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
-        XCTAssertEqual(options.map(\.currencyCode), ["USD", "USD", "USD", "USD", "USD"])
+        XCTAssertEqual(options.map(\.label), ["Free", "USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
+        XCTAssertEqual(options.map(\.currencyCode), ["USD", "USD", "USD", "USD", "USD", "USD"])
     }
 
     func testGeneratePlanRequestEncodesBudgetAmount() throws {

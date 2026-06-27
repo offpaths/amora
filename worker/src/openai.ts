@@ -104,9 +104,11 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     `Planning area: ${input.locationLabel}. Treat this as the planning area, not the whole metro region.`,
     `Estimate currency: ${currencyCode}.`,
     "Prefer stops close to this area and close enough for a short walk or short rideshare.",
-    `Budget for two: ${currencyCode} ${input.budgetAmount}.`,
+    input.budgetAmount === 0 ? "Budget for two: Free." : `Budget for two: ${currencyCode} ${input.budgetAmount}.`,
     "Treat the budget as the user's approximate spend comfort for the full date for two people, not a target to exhaust.",
-    `Prefer plans with total estimated cost around or below ${currencyCode} ${input.budgetAmount} when realistic.`,
+    input.budgetAmount === 0
+      ? "Prioritize free stops and only include paid options when there is no realistic free alternative."
+      : `Prefer plans with total estimated cost around or below ${currencyCode} ${input.budgetAmount} when realistic.`,
     `Vibe: ${input.vibe}.`,
     `Duration: ${input.durationMinutes} minutes.`,
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,

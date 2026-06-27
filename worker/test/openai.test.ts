@@ -169,6 +169,15 @@ describe("generateDatePlan", () => {
     expect(prompt).toContain("Do not simply reword the same plan.");
   });
 
+  it("describes a zero budget as free", () => {
+    const prompt = buildPrompt({ ...validRequest, budgetAmount: 0 });
+
+    expect(prompt).toContain("Budget for two: Free.");
+    expect(prompt).toContain("Prioritize free stops and only include paid options when there is no realistic free alternative.");
+    expect(prompt).not.toContain("Budget for two: USD 0.");
+    expect(prompt).not.toContain("around or below USD 0");
+  });
+
   it("rejects generated plans that use the wrong country currency", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockImplementation(() =>

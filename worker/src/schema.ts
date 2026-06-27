@@ -70,7 +70,7 @@ const CountryCodeSchema = z.string()
 
 export const GeneratePlanRequestSchema = z.object({
   locationLabel: z.string().trim().min(2).max(120),
-  budgetAmount: z.number().int().min(1).max(1_000_000),
+  budgetAmount: z.number().int().min(0).max(1_000_000),
   countryCode: CountryCodeSchema,
   vibe: VibeSchema,
   noDrinking: z.boolean(),

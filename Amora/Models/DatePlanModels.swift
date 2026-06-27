@@ -8,7 +8,10 @@ struct BudgetOption: Equatable, Identifiable {
     var id: String { "\(currencyCode)-\(amount)" }
 
     var label: String {
-        "\(currencyCode) \(amount)\(isOpenEnded ? "+" : "")"
+        if amount == 0 {
+            return "Free"
+        }
+        return "\(currencyCode) \(amount)\(isOpenEnded ? "+" : "")"
     }
 }
 
@@ -27,10 +30,10 @@ enum BudgetCatalog {
     }
 
     private static let budgetSteps: [String: [Int]] = [
-        "USD": [50, 100, 150, 200, 300],
-        "GBP": [40, 80, 120, 180, 250],
-        "EUR": [50, 90, 140, 200, 300],
-        "THB": [1000, 2000, 3500, 5000, 8000]
+        "USD": [0, 50, 100, 150, 200, 300],
+        "GBP": [0, 40, 80, 120, 180, 250],
+        "EUR": [0, 50, 90, 140, 200, 300],
+        "THB": [0, 1000, 2000, 3500, 5000, 8000]
     ]
 
     private static let countryCurrencyMap: [String: String] = [
