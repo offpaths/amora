@@ -198,6 +198,7 @@ Preview hides:
 Paywall:
 
 - Primary strategic offer: monthly subscription for unlimited thoughtful date plans.
+- Primary product: Amora Plus, product id `amora_plus_monthly`, target price $9.99/month.
 - Fallback offer: Unlock 1 Thoughtful Date Plan.
 - Product id: `thoughtful_date_plan_unlock_1`.
 - Target price: $4.99.

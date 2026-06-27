@@ -1,0 +1,23 @@
+# Manual Submission Checklist
+
+- Publish Privacy Policy at https://planwithamora.com/privacy.
+- Publish Terms of Use at https://planwithamora.com/terms.
+- Publish Support page at https://planwithamora.com/support.
+- If no site deployment exists in this repo, publish the legal/support pages outside this repo before submission.
+- Confirm App Store Connect products are configured for Amora Plus and one-plan unlock.
+- Confirm StoreKit product ids match the app: `amora_plus_monthly` and `thoughtful_date_plan_unlock_1`.
+- Confirm subscription display name, description, duration, and price match in-app paywall copy.
+- Complete App Store Connect App Privacy labels for planning area/location, user content, purchases, support contact data, and any diagnostics collected.
+- Add the public Privacy Policy, Terms of Use, and Support URLs in App Store Connect metadata.
+- Confirm the app icon is present in `Amora/Assets.xcassets/AppIcon.appiconset`.
+- Confirm the archive uses `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`.
+- Confirm in-app AI disclosure is visible before generation and generation is blocked until accepted.
+- Confirm the paywall includes auto-renewal, Apple Account billing, cancellation/manage language, Privacy link, Terms link, Restore Purchases, and Manage Subscription for active subscribers.
+- Include App Review notes from `docs/app-review-notes.md`.
+- Verify the submitted build uses production backend and StoreKit configuration.
+- Confirm backend production URL is live.
+- Confirm screenshots show real app flow and paywall honestly.
+- Run `npm test -- --run` in `worker`.
+- Run `npm run typecheck` in `worker`.
+- Run `xcodebuild test -project Amora.xcodeproj -scheme Amora -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`.
+- Archive/upload from Xcode and confirm upload validation succeeds.

@@ -37,6 +37,8 @@ final class DatePlanClientTests: XCTestCase {
             let body = try XCTUnwrap(request.httpBodyData)
             let encoded = try JSONDecoder().decode(GeneratePlanRequest.self, from: body)
             XCTAssertEqual(encoded.locationLabel, "Williamsburg, Brooklyn")
+            XCTAssertEqual(encoded.countryCode, "US")
+            XCTAssertEqual(encoded.budgetAmount, 100)
             return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!, responseJSON)
         }
 
@@ -44,7 +46,8 @@ final class DatePlanClientTests: XCTestCase {
         let plan = try await client.generatePlan(
             GeneratePlanRequest(
                 locationLabel: "Williamsburg, Brooklyn",
-                budgetTier: .medium,
+                countryCode: "US",
+                budgetAmount: 100,
                 vibe: .cozy,
                 noDrinking: true,
                 durationMinutes: 120,
@@ -68,7 +71,8 @@ final class DatePlanClientTests: XCTestCase {
             _ = try await client.generatePlan(
                 GeneratePlanRequest(
                     locationLabel: "Williamsburg, Brooklyn",
-                    budgetTier: .medium,
+                    countryCode: "US",
+                    budgetAmount: 100,
                     vibe: .cozy,
                     noDrinking: true,
                     durationMinutes: 120,
@@ -81,6 +85,53 @@ final class DatePlanClientTests: XCTestCase {
         } catch {
             XCTFail("Unexpected error: \(error)")
         }
+    }
+}
+
+final class TelemetryClientTests: XCTestCase {
+    override func tearDown() {
+        URLProtocolStub.requestHandler = nil
+        super.tearDown()
+    }
+
+    func testTrackPostsSanitizedTelemetryEvent() async throws {
+        URLProtocolStub.requestHandler = { request in
+            XCTAssertEqual(request.url?.path, "/telemetry")
+            XCTAssertEqual(request.httpMethod, "POST")
+            let body = try XCTUnwrap(request.httpBodyData)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["eventName"] as? String, "preview_generation_succeeded")
+            let properties = try XCTUnwrap(json["properties"] as? [String: Any])
+            XCTAssertEqual(properties["countryCode"] as? String, "US")
+            XCTAssertEqual(properties["budgetAmount"] as? Int, 100)
+            XCTAssertNil(properties["locationLabel"])
+            XCTAssertNil(properties["partnerLikes"])
+            return (HTTPURLResponse(url: request.url!, statusCode: 202, httpVersion: nil, headerFields: nil)!, Data())
+        }
+
+        let client = TelemetryClient(baseURL: URL(string: "https://example.com")!, session: .stubbed, isEnabled: { true })
+
+        await client.track(
+            .previewGenerationSucceeded(
+                countryCode: "US",
+                budgetAmount: 100,
+                vibe: .cozy,
+                durationMinutes: 120,
+                noDrinking: true,
+                hasActiveSubscription: false
+            )
+        )
+    }
+
+    func testTrackDoesNotPostWhenAnalyticsIsDisabled() async {
+        URLProtocolStub.requestHandler = { _ in
+            XCTFail("Disabled telemetry should not send network requests")
+            throw URLError(.badServerResponse)
+        }
+
+        let client = TelemetryClient(baseURL: URL(string: "https://example.com")!, session: .stubbed, isEnabled: { false })
+
+        await client.track(.paywallViewed(hasActiveSubscription: false))
     }
 }
 

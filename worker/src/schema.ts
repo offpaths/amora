@@ -1,26 +1,154 @@
 import { z } from "zod";
 
-export const BudgetTierSchema = z.enum(["$", "$$", "$$$"]);
 export const VibeSchema = z.enum(["cozy", "adventurous", "romantic", "low-key", "foodie", "outdoorsy"]);
 export const DurationMinutesSchema = z.union([z.literal(90), z.literal(120), z.literal(180), z.literal(240)]);
 
+const CountryCurrencyMap: Record<string, string> = {
+  AD: "EUR",
+  AE: "AED",
+  AT: "EUR",
+  AU: "AUD",
+  BE: "EUR",
+  BR: "BRL",
+  CA: "CAD",
+  CH: "CHF",
+  CN: "CNY",
+  CY: "EUR",
+  CZ: "CZK",
+  DE: "EUR",
+  DK: "DKK",
+  EE: "EUR",
+  ES: "EUR",
+  FI: "EUR",
+  FR: "EUR",
+  GB: "GBP",
+  GR: "EUR",
+  HK: "HKD",
+  HR: "EUR",
+  HU: "HUF",
+  IE: "EUR",
+  IL: "ILS",
+  IN: "INR",
+  IT: "EUR",
+  JP: "JPY",
+  KR: "KRW",
+  LT: "EUR",
+  LU: "EUR",
+  LV: "EUR",
+  MC: "EUR",
+  MT: "EUR",
+  MX: "MXN",
+  MY: "MYR",
+  NL: "EUR",
+  NO: "NOK",
+  NZ: "NZD",
+  PH: "PHP",
+  PL: "PLN",
+  PT: "EUR",
+  SA: "SAR",
+  SE: "SEK",
+  SG: "SGD",
+  SI: "EUR",
+  SK: "EUR",
+  TH: "THB",
+  TR: "TRY",
+  TW: "TWD",
+  US: "USD",
+  VN: "VND",
+  ZA: "ZAR"
+};
+
+export function resolveCurrencyCode(countryCode: string): string | undefined {
+  return CountryCurrencyMap[countryCode.trim().toUpperCase()];
+}
+
+const CountryCodeSchema = z.string()
+  .trim()
+  .length(2)
+  .transform((value) => value.toUpperCase())
+  .refine((value) => resolveCurrencyCode(value) !== undefined, "unsupported country code");
+
 export const GeneratePlanRequestSchema = z.object({
   locationLabel: z.string().trim().min(2).max(120),
-  budgetTier: BudgetTierSchema,
+  budgetAmount: z.number().int().min(0).max(1_000_000),
+  countryCode: CountryCodeSchema,
   vibe: VibeSchema,
   noDrinking: z.boolean(),
   durationMinutes: DurationMinutesSchema,
-  partnerLikes: z.string().trim().max(500).optional().default("")
+  partnerLikes: z.string().trim().max(500).optional().default(""),
+  regenerationAttempt: z.number().int().min(0).max(20).optional().default(0)
+});
+
+const TelemetryEventNameSchema = z.enum([
+  "ai_disclosure_accepted",
+  "intake_step_viewed",
+  "planning_area_selected",
+  "preview_generation_started",
+  "preview_generation_succeeded",
+  "preview_generation_failed",
+  "regenerate_started",
+  "regenerate_succeeded",
+  "regenerate_failed",
+  "paywall_viewed",
+  "purchase_started",
+  "purchase_completed",
+  "plan_unlocked",
+  "subscription_status_changed",
+  "new_date_started"
+]);
+
+const TelemetryPropertySchema = z.union([
+  z.string().trim().max(80),
+  z.number().int().min(0).max(1_000_000),
+  z.boolean()
+]);
+
+const BlockedTelemetryPropertyKeys = new Set([
+  "locationLabel",
+  "partnerLikes",
+  "address",
+  "appleMapsQuery",
+  "venueName",
+  "prompt",
+  "personalContext",
+  "exactLocation",
+  "latitude",
+  "longitude"
+]);
+
+export const TelemetryEventSchema = z.object({
+  eventName: TelemetryEventNameSchema,
+  occurredAt: z.string().datetime().optional(),
+  properties: z.record(TelemetryPropertySchema).optional().default({})
+}).superRefine((event, context) => {
+  for (const key of Object.keys(event.properties)) {
+    if (BlockedTelemetryPropertyKeys.has(key)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `blocked telemetry property: ${key}`,
+        path: ["properties", key]
+      });
+    }
+  }
 });
 
 export const PreviewStopSchema = z.object({
   order: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  concept: z.string().trim().min(8).max(160)
+  concept: z.string().trim().min(8).max(160),
+  vibe: z.string().trim().min(4).max(80),
+  reason: z.string().trim().min(12).max(220),
+  personalizationSignal: z.string().trim().min(8).max(220)
 });
 
 const PreviewStopOneSchema = PreviewStopSchema.extend({ order: z.literal(1) });
 const PreviewStopTwoSchema = PreviewStopSchema.extend({ order: z.literal(2) });
 const PreviewStopThreeSchema = PreviewStopSchema.extend({ order: z.literal(3) });
+
+const CostEstimateSchema = z.string()
+  .trim()
+  .min(1)
+  .max(40)
+  .refine((value) => value === "Free" || /\b[A-Z]{3}\b/.test(value), "cost estimate must be Free or include an ISO 4217 currency code");
 
 export const LockedStopSchema = z.object({
   order: z.union([z.literal(1), z.literal(2), z.literal(3)]),
@@ -29,7 +157,7 @@ export const LockedStopSchema = z.object({
   appleMapsQuery: z.string().trim().min(2).max(220),
   durationMinutes: z.number().int().min(15).max(180),
   reason: z.string().trim().min(12).max(260),
-  estimatedCost: z.string().trim().min(1).max(40)
+  estimatedCost: CostEstimateSchema
 });
 
 const LockedStopOneSchema = LockedStopSchema.extend({ order: z.literal(1) });
@@ -44,10 +172,42 @@ export const DatePlanResponseSchema = z.object({
     stops: z.tuple([PreviewStopOneSchema, PreviewStopTwoSchema, PreviewStopThreeSchema])
   }),
   lockedPlan: z.object({
-    totalEstimatedCost: z.string().trim().min(1).max(40),
+    totalEstimatedCost: CostEstimateSchema,
     stops: z.tuple([LockedStopOneSchema, LockedStopTwoSchema, LockedStopThreeSchema])
   })
 });
 
+export function validatePlanCostsForCurrency(plan: DatePlanResponse, currencyCode: string): void {
+  const expectedCurrency = currencyCode.trim().toUpperCase();
+  const stops = plan.lockedPlan.stops;
+  const allStopsFree = stops.every((stop) => stop.estimatedCost === "Free");
+
+  for (const stop of stops) {
+    if (!isValidCostForCurrency(stop.estimatedCost, expectedCurrency)) {
+      throw new Error("invalid_plan_currency");
+    }
+  }
+
+  if (plan.lockedPlan.totalEstimatedCost === "Free") {
+    if (!allStopsFree) {
+      throw new Error("invalid_plan_currency");
+    }
+    return;
+  }
+
+  if (!isValidPaidCostForCurrency(plan.lockedPlan.totalEstimatedCost, expectedCurrency)) {
+    throw new Error("invalid_plan_currency");
+  }
+}
+
+function isValidCostForCurrency(value: string, currencyCode: string): boolean {
+  return value === "Free" || isValidPaidCostForCurrency(value, currencyCode);
+}
+
+function isValidPaidCostForCurrency(value: string, currencyCode: string): boolean {
+  return value.startsWith(`${currencyCode} `);
+}
+
 export type GeneratePlanRequest = z.infer<typeof GeneratePlanRequestSchema>;
 export type DatePlanResponse = z.infer<typeof DatePlanResponseSchema>;
+export type TelemetryEvent = z.infer<typeof TelemetryEventSchema>;

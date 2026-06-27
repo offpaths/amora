@@ -22,4 +22,18 @@ final class LocationLabelServiceTests: XCTestCase {
             "CA"
         )
     }
+
+    func testLocationSuggestionLabelCombinesTitleAndSubtitle() {
+        XCTAssertEqual(
+            LocationSuggestionFormatter.label(title: "Soho", subtitle: "London, UK"),
+            "Soho, London, UK"
+        )
+    }
+
+    func testLocationSuggestionLabelAvoidsDuplicateSubtitle() {
+        XCTAssertEqual(
+            LocationSuggestionFormatter.label(title: "Soho, London, UK", subtitle: "London, UK"),
+            "Soho, London, UK"
+        )
+    }
 }

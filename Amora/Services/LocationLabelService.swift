@@ -1,5 +1,12 @@
+import Combine
 import CoreLocation
 import Foundation
+import MapKit
+
+struct PlanningArea: Equatable {
+    var label: String
+    var countryCode: String
+}
 
 enum LocationLabelFormatter {
     static func label(from placemark: CLPlacemark) -> String {
@@ -27,6 +34,62 @@ enum LocationLabelFormatter {
     }
 }
 
+enum LocationSuggestionFormatter {
+    static func label(title: String, subtitle: String) -> String {
+        guard !subtitle.isEmpty else { return title }
+        guard !title.localizedCaseInsensitiveContains(subtitle) else { return title }
+        return "\(title), \(subtitle)"
+    }
+}
+
+@MainActor
+final class LocationSuggestionService: NSObject, ObservableObject, @preconcurrency MKLocalSearchCompleterDelegate {
+    @Published private(set) var suggestions: [MKLocalSearchCompletion] = []
+
+    private let completer = MKLocalSearchCompleter()
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest, .query]
+    }
+
+    func update(query: String) {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedQuery.count >= 2 else {
+            clear()
+            return
+        }
+        completer.queryFragment = trimmedQuery
+    }
+
+    func clear() {
+        completer.queryFragment = ""
+        suggestions = []
+    }
+
+    func label(for suggestion: MKLocalSearchCompletion) -> String {
+        LocationSuggestionFormatter.label(title: suggestion.title, subtitle: suggestion.subtitle)
+    }
+
+    func planningArea(for suggestion: MKLocalSearchCompletion) async throws -> PlanningArea? {
+        let request = MKLocalSearch.Request(completion: suggestion)
+        let response = try await MKLocalSearch(request: request).start()
+        guard let placemark = response.mapItems.first?.placemark else {
+            return nil
+        }
+        return PlanningArea.from(placemark: placemark, fallbackLabel: label(for: suggestion))
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        suggestions = Array(completer.results.prefix(5))
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        suggestions = []
+    }
+}
+
 @MainActor
 final class LocationLabelService: NSObject, @preconcurrency CLLocationManagerDelegate {
     private let manager = CLLocationManager()
@@ -44,6 +107,10 @@ final class LocationLabelService: NSObject, @preconcurrency CLLocationManagerDel
     }
 
     func currentAreaLabel() async throws -> String {
+        try await currentPlanningArea()?.label ?? ""
+    }
+
+    func currentPlanningArea() async throws -> PlanningArea? {
         let location: CLLocation?
         if let cachedLocation = manager.location {
             location = cachedLocation
@@ -51,10 +118,25 @@ final class LocationLabelService: NSObject, @preconcurrency CLLocationManagerDel
             location = await requestCurrentLocation()
         }
         guard let location else {
-            return ""
+            return nil
         }
         let placemarks = try await geocoder.reverseGeocodeLocation(location)
-        return placemarks.first.map(LocationLabelFormatter.label(from:)) ?? ""
+        guard let placemark = placemarks.first else {
+            return nil
+        }
+        return PlanningArea.from(placemark: placemark, fallbackLabel: LocationLabelFormatter.label(from: placemark))
+    }
+
+    func planningArea(for query: String) async throws -> PlanningArea? {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else {
+            return nil
+        }
+        let placemarks = try await geocoder.geocodeAddressString(trimmedQuery)
+        guard let placemark = placemarks.first else {
+            return nil
+        }
+        return PlanningArea.from(placemark: placemark, fallbackLabel: trimmedQuery)
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -100,5 +182,15 @@ final class LocationLabelService: NSObject, @preconcurrency CLLocationManagerDel
     private func finishLocationRequest(with location: CLLocation?) {
         locationContinuation?.resume(returning: location)
         locationContinuation = nil
+    }
+}
+
+private extension PlanningArea {
+    static func from(placemark: CLPlacemark, fallbackLabel: String) -> PlanningArea? {
+        guard let countryCode = placemark.isoCountryCode?.trimmingCharacters(in: .whitespacesAndNewlines), !countryCode.isEmpty else {
+            return nil
+        }
+        let label = LocationLabelFormatter.label(from: placemark)
+        return PlanningArea(label: label.isEmpty ? fallbackLabel : label, countryCode: countryCode.uppercased())
     }
 }

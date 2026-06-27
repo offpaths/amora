@@ -1,4 +1,10 @@
-import { DatePlanResponseSchema, type DatePlanResponse, type GeneratePlanRequest } from "./schema";
+import {
+  DatePlanResponseSchema,
+  resolveCurrencyCode,
+  validatePlanCostsForCurrency,
+  type DatePlanResponse,
+  type GeneratePlanRequest
+} from "./schema";
 
 export interface Env {
   OPENAI_API_KEY: string;
@@ -9,11 +15,12 @@ export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Pr
     throw new Error("OPENAI_API_KEY is not configured");
   }
 
+  const currencyCode = currencyCodeForInput(input);
   const initialPrompt = buildPrompt(input);
-  return runRecoveryLoop(initialPrompt, (prompt) => callOpenAIForCandidate(prompt, env));
+  return runRecoveryLoop(initialPrompt, (prompt) => callOpenAIForCandidate(prompt, env, currencyCode), currencyCode);
 }
 
-async function callOpenAIForCandidate(prompt: string, env: Env): Promise<unknown> {
+async function callOpenAIForCandidate(prompt: string, env: Env, currencyCode: string): Promise<unknown> {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -32,12 +39,13 @@ async function callOpenAIForCandidate(prompt: string, env: Env): Promise<unknown
   }
 
   const payload: unknown = await response.json();
-  return extractDatePlanCandidate(payload);
+  return extractDatePlanCandidate(payload, currencyCode);
 }
 
 export async function runRecoveryLoop(
   initialPrompt: string,
-  generateCandidate: (prompt: string) => Promise<unknown>
+  generateCandidate: (prompt: string) => Promise<unknown>,
+  currencyCode = "USD"
 ): Promise<DatePlanResponse> {
   let prompt = initialPrompt;
   let lastError = "invalid_plan_schema";
@@ -56,7 +64,7 @@ export async function runRecoveryLoop(
     }
 
     try {
-      return parsePlanCandidate(candidate);
+      return parsePlanCandidate(candidate, currencyCode);
     } catch (error) {
       lastError = error instanceof Error ? error.message : "invalid_plan_schema";
       prompt = buildRecoveryPrompt(initialPrompt, lastError);
@@ -66,9 +74,10 @@ export async function runRecoveryLoop(
   throw new Error(lastError);
 }
 
-export function parsePlanCandidate(candidate: unknown): DatePlanResponse {
+export function parsePlanCandidate(candidate: unknown, currencyCode = "USD"): DatePlanResponse {
   const parsed = DatePlanResponseSchema.safeParse(candidate);
   if (parsed.success) {
+    validatePlanCostsForCurrency(parsed.data, currencyCode);
     return parsed.data;
   }
   throw new Error("invalid_plan_schema");
@@ -86,26 +95,47 @@ export function buildRecoveryPrompt(originalPrompt: string, validationError: str
 }
 
 export function buildPrompt(input: GeneratePlanRequest): string {
+  const currencyCode = currencyCodeForInput(input);
   return [
     "Generate a premium date plan for Amora.",
     "Return only valid JSON matching the required plan schema.",
     "If validation feedback is provided, correct the response and try again.",
     "Maximum recovery steps are handled by the server; keep each attempt concise.",
     `Planning area: ${input.locationLabel}. Treat this as the planning area, not the whole metro region.`,
+    `Estimate currency: ${currencyCode}.`,
     "Prefer stops close to this area and close enough for a short walk or short rideshare.",
-    `Budget tier: ${input.budgetTier}.`,
+    input.budgetAmount === 0 ? "Budget for two: Free." : `Budget for two: ${currencyCode} ${input.budgetAmount}.`,
+    "Treat the budget as the user's approximate spend comfort for the full date for two people, not a target to exhaust.",
+    input.budgetAmount === 0
+      ? "Prioritize free stops and only include paid options when there is no realistic free alternative."
+      : `Prefer plans with total estimated cost around or below ${currencyCode} ${input.budgetAmount} when realistic.`,
     `Vibe: ${input.vibe}.`,
     `Duration: ${input.durationMinutes} minutes.`,
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,
-    `Partner likes: ${input.partnerLikes || "not provided"}.`,
+    `Regeneration attempt: ${input.regenerationAttempt}.`,
+    input.regenerationAttempt > 0
+      ? "This is a regenerated plan. Keep the same user preferences, area, budget, and constraints, but produce a meaningfully different itinerary from a typical first answer: use different venue choices, a different stop sequence, and different preview concepts where possible. Do not simply reword the same plan."
+      : "This is the first generated plan for these inputs.",
+    `Partner likes or pasted context: ${input.partnerLikes || "not provided"}.`,
+    "The partner likes field may contain a clean summary or pasted chat/note context.",
+    "Extract only date-planning signals that are clearly supported by the provided text.",
+    "Useful signals include likes, dislikes, food or drink preferences, vibe clues, activities or places mentioned, timing clues, comfort constraints, and personal details that can make the plan feel considered.",
+    "Do not psychoanalyze, infer sensitive traits, or make claims about the person beyond the provided context.",
+    "Separate strong signals from weak guesses internally; only use weak guesses when phrased cautiously.",
     "Make the plan feel specific to this person and moment, not like a reusable generic route.",
-    "Use partner likes in the preview concepts and locked-stop reasons when provided.",
+    "Use the personal context in preview concepts, preview reasons, preview personalization signals, and locked-stop reasons when provided.",
+    "Write locked-stop reasons from the recipient's perspective.",
+    "Explain how each locked stop reflects her stated preferences, comfort, energy, and desired vibe.",
+    "Do not promise emotional outcomes or say the plan will make her feel a specific way.",
     "Avoid plans that could be copy-pasted for different people without changing the personal logic.",
+    `Estimate costs for two people using ${currencyCode}. Use broad ranges, not exact prices.`,
+    `Paid locked cost estimates must begin with ${currencyCode}.`,
+    "Use exactly Free for zero-cost stops.",
     "Schema contract:",
     "id: string",
     "preview.title: string",
     "preview.summaryBadges: string[]",
-    "preview.stops: exactly 3 objects with order 1, 2, 3 and concept",
+    "preview.stops: exactly 3 objects with order 1, 2, 3, concept, vibe, reason, personalizationSignal",
     "lockedPlan.totalEstimatedCost: string",
     "lockedPlan.stops: exactly 3 objects with order 1, 2, 3, venueName, address, appleMapsQuery, durationMinutes, reason, estimatedCost",
     "Do not include current events. Do not reveal exact venues in preview concepts.",
@@ -114,7 +144,7 @@ export function buildPrompt(input: GeneratePlanRequest): string {
   ].join("\n");
 }
 
-function extractDatePlanCandidate(payload: unknown): DatePlanResponse {
+function extractDatePlanCandidate(payload: unknown, currencyCode: string): DatePlanResponse {
   const rawOutputTextCandidates: string[] = [];
   const rawOtherTextCandidates: string[] = [];
 
@@ -155,16 +185,30 @@ function extractDatePlanCandidate(payload: unknown): DatePlanResponse {
     }
 
     const parsed = DatePlanResponseSchema.safeParse(candidate);
-    if (parsed.success) {
-      return parsed.data;
+    if (!parsed.success) {
+      continue;
     }
+
+    validatePlanCostsForCurrency(parsed.data, currencyCode);
+    return parsed.data;
   }
 
   throw new Error("No JSON candidate found in OpenAI response");
 }
 
+function currencyCodeForInput(input: GeneratePlanRequest): string {
+  const currencyCode = resolveCurrencyCode(input.countryCode);
+  if (!currencyCode) {
+    throw new Error("unsupported_country_code");
+  }
+  return currencyCode;
+}
+
 function isRecoverableGenerationError(error: unknown): boolean {
-  return error instanceof Error && error.message === "No JSON candidate found in OpenAI response";
+  return error instanceof Error && (
+    error.message === "No JSON candidate found in OpenAI response" ||
+    error.message === "invalid_plan_currency"
+  );
 }
 
 function hasText(part: unknown): part is { type?: unknown; text: unknown } {

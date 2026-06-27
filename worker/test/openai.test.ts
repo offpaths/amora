@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
+import { buildPrompt, buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
 import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
   locationLabel: "Williamsburg, Brooklyn",
-  budgetTier: "$$",
+  budgetAmount: 100,
+  countryCode: "US",
   vibe: "cozy",
   noDrinking: true,
   durationMinutes: 120,
-  partnerLikes: "bookstores, matcha, quiet places"
+  partnerLikes: "bookstores, matcha, quiet places",
+  regenerationAttempt: 0
 };
 
 const validPlan: DatePlanResponse = {
@@ -17,13 +19,31 @@ const validPlan: DatePlanResponse = {
     title: "A cozy 2-hour plan near Williamsburg",
     summaryBadges: ["$$", "2 hours", "No bars", "Matched to bookstores"],
     stops: [
-      { order: 1, concept: "A cozy conversation starter near Williamsburg" },
-      { order: 2, concept: "A personal activity matched to bookstores" },
-      { order: 3, concept: "A relaxed dessert finish nearby" }
+      {
+        order: 1,
+        concept: "A cozy conversation starter near Williamsburg",
+        vibe: "cozy",
+        reason: "Starts with an easy, quiet setting for conversation.",
+        personalizationSignal: "near Williamsburg"
+      },
+      {
+        order: 2,
+        concept: "A personal activity matched to bookstores",
+        vibe: "personal",
+        reason: "Builds the date around a shared browsing activity.",
+        personalizationSignal: "bookstores"
+      },
+      {
+        order: 3,
+        concept: "A relaxed dessert finish nearby",
+        vibe: "relaxed",
+        reason: "Ends low-pressure with something sweet close by.",
+        personalizationSignal: "quiet places"
+      }
     ]
   },
   lockedPlan: {
-    totalEstimatedCost: "$60-$90",
+    totalEstimatedCost: "USD 60-90",
     stops: [
       {
         order: 1,
@@ -32,7 +52,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Cafe 123 Example St",
         durationMinutes: 35,
         reason: "A calm first stop that fits the cozy vibe.",
-        estimatedCost: "$20-$30"
+        estimatedCost: "USD 20-30"
       },
       {
         order: 2,
@@ -41,7 +61,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Bookstore 456 Example Ave",
         durationMinutes: 50,
         reason: "A personal stop aligned with her interests.",
-        estimatedCost: "$10-$25"
+        estimatedCost: "USD 10-25"
       },
       {
         order: 3,
@@ -50,7 +70,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Dessert Bar 789 Example Rd",
         durationMinutes: 35,
         reason: "A relaxed finish that keeps the date low-pressure.",
-        estimatedCost: "$30-$35"
+        estimatedCost: "USD 30-35"
       }
     ]
   }
@@ -110,20 +130,73 @@ describe("generateDatePlan", () => {
       tools: [{ type: "web_search" }]
     });
     expect(body.input).toContain("Planning area: Williamsburg, Brooklyn.");
-    expect(body.input).toContain("Budget tier: $$.");
+    expect(body.input).toContain("Estimate currency: USD.");
+    expect(body.input).toContain("Budget for two: USD 100.");
+    expect(body.input).toContain("Treat the budget as the user's approximate spend comfort for the full date for two people, not a target to exhaust.");
+    expect(body.input).toContain("Prefer plans with total estimated cost around or below USD 100 when realistic.");
     expect(body.input).toContain("No drinking: yes, avoid alcohol-centered stops.");
-    expect(body.input).toContain("Partner likes: bookstores, matcha, quiet places.");
+    expect(body.input).toContain("Regeneration attempt: 0.");
+    expect(body.input).toContain("This is the first generated plan for these inputs.");
+    expect(body.input).toContain("Partner likes or pasted context: bookstores, matcha, quiet places.");
+    expect(body.input).toContain("The partner likes field may contain a clean summary or pasted chat/note context.");
+    expect(body.input).toContain("Extract only date-planning signals that are clearly supported by the provided text.");
+    expect(body.input).toContain("Do not psychoanalyze, infer sensitive traits, or make claims about the person beyond the provided context.");
+    expect(body.input).toContain("Write locked-stop reasons from the recipient's perspective.");
+    expect(body.input).toContain("Explain how each locked stop reflects her stated preferences, comfort, energy, and desired vibe.");
+    expect(body.input).toContain("Do not promise emotional outcomes or say the plan will make her feel a specific way.");
+    expect(body.input).toContain("Estimate costs for two people using USD.");
+    expect(body.input).toContain("Paid locked cost estimates must begin with USD.");
+    expect(body.input).toContain("Use exactly Free for zero-cost stops.");
     expect(body.input).toContain("Schema contract:");
     expect(body.input).toContain("id: string");
     expect(body.input).toContain("preview.title: string");
     expect(body.input).toContain("preview.summaryBadges: string[]");
-    expect(body.input).toContain("preview.stops: exactly 3 objects with order 1, 2, 3 and concept");
+    expect(body.input).toContain("preview.stops: exactly 3 objects with order 1, 2, 3, concept, vibe, reason, personalizationSignal");
     expect(body.input).toContain("lockedPlan.totalEstimatedCost: string");
     expect(body.input).toContain(
       "lockedPlan.stops: exactly 3 objects with order 1, 2, 3, venueName, address, appleMapsQuery, durationMinutes, reason, estimatedCost"
     );
     expect(body.input).toContain("No markdown. No prose outside JSON.");
     expect(body.input).toContain("Return exactly 3 preview stops and exactly 3 locked stops.");
+  });
+
+  it("asks for a meaningfully different itinerary on regeneration", () => {
+    const prompt = buildPrompt({ ...validRequest, regenerationAttempt: 1 });
+
+    expect(prompt).toContain("Regeneration attempt: 1.");
+    expect(prompt).toContain("This is a regenerated plan.");
+    expect(prompt).toContain("use different venue choices, a different stop sequence, and different preview concepts");
+    expect(prompt).toContain("Do not simply reword the same plan.");
+  });
+
+  it("describes a zero budget as free", () => {
+    const prompt = buildPrompt({ ...validRequest, budgetAmount: 0 });
+
+    expect(prompt).toContain("Budget for two: Free.");
+    expect(prompt).toContain("Prioritize free stops and only include paid options when there is no realistic free alternative.");
+    expect(prompt).not.toContain("Budget for two: USD 0.");
+    expect(prompt).not.toContain("around or below USD 0");
+  });
+
+  it("rejects generated plans that use the wrong country currency", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse({
+        output: [
+          {
+            type: "message",
+            content: [
+              { type: "output_text", text: JSON.stringify(validPlan) }
+            ]
+          }
+        ]
+      }))
+    );
+
+    await expect(
+      generateDatePlan({ ...validRequest, countryCode: "GB" }, { OPENAI_API_KEY: "test-key" })
+    ).rejects.toThrow("invalid_plan_currency");
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
   it("continues scanning raw text candidates until it finds valid output JSON", async () => {
@@ -306,11 +379,15 @@ describe("generateDatePlan", () => {
 
 describe("parsePlanCandidate", () => {
   it("accepts a valid candidate", () => {
-    expect(parsePlanCandidate(validPlan)).toEqual(validPlan);
+    expect(parsePlanCandidate(validPlan, "USD")).toEqual(validPlan);
   });
 
   it("throws for invalid candidates", () => {
-    expect(() => parsePlanCandidate({ ...validPlan, lockedPlan: { stops: [] } })).toThrow("invalid_plan_schema");
+    expect(() => parsePlanCandidate({ ...validPlan, lockedPlan: { stops: [] } }, "USD")).toThrow("invalid_plan_schema");
+  });
+
+  it("throws when a valid candidate uses the wrong currency", () => {
+    expect(() => parsePlanCandidate(validPlan, "GBP")).toThrow("invalid_plan_currency");
   });
 });
 

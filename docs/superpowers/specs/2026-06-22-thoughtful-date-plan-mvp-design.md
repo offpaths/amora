@@ -162,6 +162,7 @@ Request body:
 {
   "locationLabel": "Williamsburg, Brooklyn",
   "budgetTier": "$$",
+  "countryCode": "US",
   "vibe": "cozy",
   "noDrinking": true,
   "durationMinutes": 120,
@@ -193,7 +194,7 @@ Response body:
     ]
   },
   "lockedPlan": {
-    "totalEstimatedCost": "$60-$90",
+    "totalEstimatedCost": "USD 60-90",
     "stops": [
       {
         "order": 1,
@@ -202,7 +203,7 @@ Response body:
         "appleMapsQuery": "Example Cafe 123 Example St",
         "durationMinutes": 35,
         "reason": "A calm first stop that fits the cozy vibe.",
-        "estimatedCost": "$20-$30"
+        "estimatedCost": "USD 20-30"
       },
       {
         "order": 2,
@@ -211,7 +212,7 @@ Response body:
         "appleMapsQuery": "Example Bookstore 456 Example Ave",
         "durationMinutes": 50,
         "reason": "A personal stop aligned with her interest in bookstores.",
-        "estimatedCost": "$10-$25"
+        "estimatedCost": "Free"
       },
       {
         "order": 3,
@@ -220,14 +221,14 @@ Response body:
         "appleMapsQuery": "Example Dessert Bar 789 Example Rd",
         "durationMinutes": 35,
         "reason": "A relaxed finish that keeps the date low-pressure.",
-        "estimatedCost": "$30-$35"
+        "estimatedCost": "USD 30-35"
       }
     ]
   }
 }
 ```
 
-The final schema must require exactly 3 preview stops and exactly 3 locked stops.
+The final schema must require exactly 3 preview stops and exactly 3 locked stops. Paid cost estimates must use the currency resolved from `countryCode`; zero-cost stops must use exactly `Free`.
 
 The generation prompt must treat `locationLabel` as the planning area, not the entire metro region. It should prefer stops that are close to that area and close enough to each other for a short walk or short rideshare. The MVP does not include a map picker, custom radius, or full route optimization.
 

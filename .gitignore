@@ -1,0 +1,6 @@
+.DS_Store
+.wrangler/
+.superpowers/
+worker/.wrangler/
+worker/node_modules/
+Amora.xcodeproj/project.xcworkspace/xcuserdata/
