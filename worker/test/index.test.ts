@@ -5,7 +5,8 @@ import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
   locationLabel: "Williamsburg, Brooklyn",
-  budgetTier: "$$",
+  budgetAmount: 100,
+  countryCode: "US",
   vibe: "cozy",
   noDrinking: true,
   durationMinutes: 120,
@@ -43,7 +44,7 @@ const validPlan: DatePlanResponse = {
     ]
   },
   lockedPlan: {
-    totalEstimatedCost: "$60-$90",
+    totalEstimatedCost: "USD 60-90",
     stops: [
       {
         order: 1,
@@ -52,7 +53,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Cafe 123 Example St",
         durationMinutes: 35,
         reason: "A calm first stop that fits the cozy vibe.",
-        estimatedCost: "$20-$30"
+        estimatedCost: "USD 20-30"
       },
       {
         order: 2,
@@ -61,7 +62,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Bookstore 456 Example Ave",
         durationMinutes: 50,
         reason: "A personal stop aligned with her interests.",
-        estimatedCost: "$10-$25"
+        estimatedCost: "USD 10-25"
       },
       {
         order: 3,
@@ -70,7 +71,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Dessert Bar 789 Example Rd",
         durationMinutes: 35,
         reason: "A relaxed finish that keeps the date low-pressure.",
-        estimatedCost: "$30-$35"
+        estimatedCost: "USD 30-35"
       }
     ]
   }
@@ -99,6 +100,101 @@ describe("POST /generate-plan", () => {
     await expect(response.json()).resolves.toEqual(validPlan);
     expect(generateDatePlan).toHaveBeenCalledWith(validRequest, { OPENAI_API_KEY: "test-key" });
     expectCorsHeaders(response);
+  });
+
+  it("allows requests up to the per-client rate limit", async () => {
+    for (let i = 0; i < 10; i += 1) {
+      const response = await worker.fetch(
+        new Request("http://localhost/generate-plan", {
+          method: "POST",
+          body: JSON.stringify(validRequest),
+          headers: {
+            "content-type": "application/json",
+            "cf-connecting-ip": "203.0.113.10"
+          }
+        }),
+        { OPENAI_API_KEY: "test-key" }
+      );
+
+      expect(response.status).toBe(200);
+    }
+
+    expect(generateDatePlan).toHaveBeenCalledTimes(10);
+  });
+
+  it("returns a retryable rate limit error after too many requests from one client", async () => {
+    for (let i = 0; i < 10; i += 1) {
+      await worker.fetch(
+        new Request("http://localhost/generate-plan", {
+          method: "POST",
+          body: JSON.stringify(validRequest),
+          headers: {
+            "content-type": "application/json",
+            "cf-connecting-ip": "203.0.113.20"
+          }
+        }),
+        { OPENAI_API_KEY: "test-key" }
+      );
+    }
+
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(validRequest),
+        headers: {
+          "content-type": "application/json",
+          "cf-connecting-ip": "203.0.113.20"
+        }
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({ error: "rate_limited", retryable: true });
+    expect(generateDatePlan).toHaveBeenCalledTimes(10);
+    expectCorsHeaders(response);
+  });
+
+  it("tracks rate limits separately by client IP", async () => {
+    for (let i = 0; i < 10; i += 1) {
+      await worker.fetch(
+        new Request("http://localhost/generate-plan", {
+          method: "POST",
+          body: JSON.stringify(validRequest),
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": "203.0.113.30, 198.51.100.1"
+          }
+        }),
+        { OPENAI_API_KEY: "test-key" }
+      );
+    }
+
+    const blockedResponse = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(validRequest),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.30, 198.51.100.1"
+        }
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+    const allowedResponse = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(validRequest),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.31, 198.51.100.1"
+        }
+      }),
+      { OPENAI_API_KEY: "test-key" }
+    );
+
+    expect(blockedResponse.status).toBe(429);
+    expect(allowedResponse.status).toBe(200);
   });
 
   it("rejects invalid request bodies", async () => {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { GeneratePlanRequestSchema, DatePlanResponseSchema } from "../src/schema";
+import {
+  GeneratePlanRequestSchema,
+  DatePlanResponseSchema,
+  resolveCurrencyCode,
+  validatePlanCostsForCurrency
+} from "../src/schema";
 
 const validDatePlanResponse = {
   id: "plan_123",
@@ -31,7 +36,7 @@ const validDatePlanResponse = {
     ]
   },
   lockedPlan: {
-    totalEstimatedCost: "$60-$90",
+    totalEstimatedCost: "USD 60-90",
     stops: [
       {
         order: 1,
@@ -40,7 +45,7 @@ const validDatePlanResponse = {
         appleMapsQuery: "Example Cafe 123 Example St",
         durationMinutes: 40,
         reason: "A calm first stop.",
-        estimatedCost: "$20-$30"
+        estimatedCost: "USD 20-30"
       },
       {
         order: 2,
@@ -49,7 +54,7 @@ const validDatePlanResponse = {
         appleMapsQuery: "Example Bookstore 456 Example Ave",
         durationMinutes: 50,
         reason: "A thoughtful middle stop.",
-        estimatedCost: "$15-$25"
+        estimatedCost: "USD 15-25"
       },
       {
         order: 3,
@@ -58,7 +63,7 @@ const validDatePlanResponse = {
         appleMapsQuery: "Example Dessert 789 Example Blvd",
         durationMinutes: 30,
         reason: "A sweet closing moment.",
-        estimatedCost: "$25-$35"
+        estimatedCost: "USD 25-35"
       }
     ]
   }
@@ -68,7 +73,8 @@ describe("GeneratePlanRequestSchema", () => {
   it("accepts a valid MVP request", () => {
     const result = GeneratePlanRequestSchema.safeParse({
       locationLabel: "Williamsburg, Brooklyn",
-      budgetTier: "$$",
+      budgetAmount: 100,
+      countryCode: "US",
       vibe: "cozy",
       noDrinking: true,
       durationMinutes: 120,
@@ -77,6 +83,7 @@ describe("GeneratePlanRequestSchema", () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
+      expect(result.data.budgetAmount).toBe(100);
       expect(result.data.regenerationAttempt).toBe(0);
     }
   });
@@ -84,10 +91,52 @@ describe("GeneratePlanRequestSchema", () => {
   it("rejects unsupported durations", () => {
     const result = GeneratePlanRequestSchema.safeParse({
       locationLabel: "Williamsburg, Brooklyn",
-      budgetTier: "$$",
+      budgetAmount: 100,
+      countryCode: "US",
       vibe: "cozy",
       noDrinking: true,
       durationMinutes: 95,
+      partnerLikes: ""
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects requests without a country code", () => {
+    const result = GeneratePlanRequestSchema.safeParse({
+      locationLabel: "Williamsburg, Brooklyn",
+      budgetAmount: 100,
+      vibe: "cozy",
+      noDrinking: true,
+      durationMinutes: 120,
+      partnerLikes: ""
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects unsupported country codes", () => {
+    const result = GeneratePlanRequestSchema.safeParse({
+      locationLabel: "Atlantis",
+      budgetAmount: 100,
+      countryCode: "ZZ",
+      vibe: "cozy",
+      noDrinking: true,
+      durationMinutes: 120,
+      partnerLikes: ""
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid budget amounts", () => {
+    const result = GeneratePlanRequestSchema.safeParse({
+      locationLabel: "Williamsburg, Brooklyn",
+      budgetAmount: 0,
+      countryCode: "US",
+      vibe: "cozy",
+      noDrinking: true,
+      durationMinutes: 120,
       partnerLikes: ""
     });
 
@@ -100,6 +149,93 @@ describe("DatePlanResponseSchema", () => {
     const result = DatePlanResponseSchema.safeParse(validDatePlanResponse);
 
     expect(result.success).toBe(true);
+  });
+
+  it("rejects locked cost estimates without an explicit currency identifier", () => {
+    const result = DatePlanResponseSchema.safeParse({
+      ...validDatePlanResponse,
+      lockedPlan: {
+        ...validDatePlanResponse.lockedPlan,
+        totalEstimatedCost: "$60",
+        stops: validDatePlanResponse.lockedPlan.stops.map((stop) => ({
+          ...stop,
+          estimatedCost: "$25"
+        }))
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts free stop costs in any country", () => {
+    const plan = {
+      ...validDatePlanResponse,
+      lockedPlan: {
+        ...validDatePlanResponse.lockedPlan,
+        stops: [
+          { ...validDatePlanResponse.lockedPlan.stops[0], estimatedCost: "Free" },
+          validDatePlanResponse.lockedPlan.stops[1],
+          validDatePlanResponse.lockedPlan.stops[2]
+        ]
+      }
+    };
+
+    const parsed = DatePlanResponseSchema.parse(plan);
+
+    expect(() => validatePlanCostsForCurrency(parsed, "USD")).not.toThrow();
+  });
+
+  it("allows a free total only when every stop is free", () => {
+    const allFreePlan = {
+      ...validDatePlanResponse,
+      lockedPlan: {
+        totalEstimatedCost: "Free",
+        stops: validDatePlanResponse.lockedPlan.stops.map((stop) => ({
+          ...stop,
+          estimatedCost: "Free"
+        }))
+      }
+    };
+
+    const mixedPlan = {
+      ...validDatePlanResponse,
+      lockedPlan: {
+        ...validDatePlanResponse.lockedPlan,
+        totalEstimatedCost: "Free",
+        stops: [
+          { ...validDatePlanResponse.lockedPlan.stops[0], estimatedCost: "Free" },
+          validDatePlanResponse.lockedPlan.stops[1],
+          validDatePlanResponse.lockedPlan.stops[2]
+        ]
+      }
+    };
+
+    expect(() => validatePlanCostsForCurrency(DatePlanResponseSchema.parse(allFreePlan), "USD")).not.toThrow();
+    expect(() => validatePlanCostsForCurrency(DatePlanResponseSchema.parse(mixedPlan), "USD")).toThrow("invalid_plan_currency");
+  });
+
+  it("validates paid estimates against the resolved country currency", () => {
+    const ukPlan = {
+      ...validDatePlanResponse,
+      lockedPlan: {
+        totalEstimatedCost: "GBP 40-60",
+        stops: validDatePlanResponse.lockedPlan.stops.map((stop) => ({
+          ...stop,
+          estimatedCost: "GBP 10-20"
+        }))
+      }
+    };
+
+    const wrongCurrencyPlan = {
+      ...ukPlan,
+      lockedPlan: {
+        ...ukPlan.lockedPlan,
+        totalEstimatedCost: "USD 40-60"
+      }
+    };
+
+    expect(() => validatePlanCostsForCurrency(DatePlanResponseSchema.parse(ukPlan), "GBP")).not.toThrow();
+    expect(() => validatePlanCostsForCurrency(DatePlanResponseSchema.parse(wrongCurrencyPlan), "GBP")).toThrow("invalid_plan_currency");
   });
 
   it("rejects too few preview stops", () => {
@@ -177,7 +313,7 @@ describe("DatePlanResponseSchema", () => {
             appleMapsQuery: "Example Nightcap 321 Example Rd",
             durationMinutes: 25,
             reason: "An extra locked stop.",
-            estimatedCost: "$10-$20"
+            estimatedCost: "USD 10-20"
           }
         ]
       }
@@ -248,5 +384,19 @@ describe("DatePlanResponseSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("resolveCurrencyCode", () => {
+  it("maps countries to their estimate currencies", () => {
+    expect(resolveCurrencyCode("GB")).toBe("GBP");
+    expect(resolveCurrencyCode("TH")).toBe("THB");
+    expect(resolveCurrencyCode("US")).toBe("USD");
+    expect(resolveCurrencyCode("JP")).toBe("JPY");
+    expect(resolveCurrencyCode("FR")).toBe("EUR");
+  });
+
+  it("returns undefined for unsupported country codes", () => {
+    expect(resolveCurrencyCode("ZZ")).toBeUndefined();
   });
 });
