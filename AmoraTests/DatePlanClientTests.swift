@@ -37,6 +37,8 @@ final class DatePlanClientTests: XCTestCase {
             let body = try XCTUnwrap(request.httpBodyData)
             let encoded = try JSONDecoder().decode(GeneratePlanRequest.self, from: body)
             XCTAssertEqual(encoded.locationLabel, "Williamsburg, Brooklyn")
+            XCTAssertEqual(encoded.countryCode, "US")
+            XCTAssertEqual(encoded.budgetAmount, 100)
             return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!, responseJSON)
         }
 
@@ -44,7 +46,8 @@ final class DatePlanClientTests: XCTestCase {
         let plan = try await client.generatePlan(
             GeneratePlanRequest(
                 locationLabel: "Williamsburg, Brooklyn",
-                budgetTier: .medium,
+                countryCode: "US",
+                budgetAmount: 100,
                 vibe: .cozy,
                 noDrinking: true,
                 durationMinutes: 120,
@@ -68,7 +71,8 @@ final class DatePlanClientTests: XCTestCase {
             _ = try await client.generatePlan(
                 GeneratePlanRequest(
                     locationLabel: "Williamsburg, Brooklyn",
-                    budgetTier: .medium,
+                    countryCode: "US",
+                    budgetAmount: 100,
                     vibe: .cozy,
                     noDrinking: true,
                     durationMinutes: 120,

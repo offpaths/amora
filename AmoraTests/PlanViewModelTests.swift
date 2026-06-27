@@ -6,15 +6,29 @@ final class PlanViewModelTests: XCTestCase {
     func testDefaultInputsMatchMVPDefaults() {
         let viewModel = PlanViewModel()
 
-        XCTAssertEqual(viewModel.budgetTier, .medium)
+        XCTAssertEqual(viewModel.budgetAmount, 100)
         XCTAssertEqual(viewModel.vibe, .cozy)
         XCTAssertTrue(viewModel.noDrinking)
         XCTAssertEqual(viewModel.durationMinutes, 120)
+        XCTAssertFalse(viewModel.hasAcceptedAIDisclosure)
+        XCTAssertTrue(viewModel.isCreatePlanDisabled)
+    }
+
+    func testSetPlanningAreaKeepsBudgetValidForCountry() {
+        let viewModel = PlanViewModel()
+        viewModel.budgetAmount = 300
+
+        viewModel.setPlanningArea(label: "Shoreditch, London", countryCode: "GB")
+
+        XCTAssertEqual(viewModel.planningAreaCountryCode, "GB")
+        XCTAssertEqual(viewModel.budgetAmount, 250)
     }
 
     func testGeneratePreviewStoresPlan() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
 
@@ -25,6 +39,8 @@ final class PlanViewModelTests: XCTestCase {
     func testUnlockCurrentPlanEnablesOneRegenerate() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
         viewModel.unlockCurrentPlan()
@@ -42,6 +58,8 @@ final class PlanViewModelTests: XCTestCase {
             return Self.samplePlan(id: "plan_\(count)")
         })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
         viewModel.unlockCurrentPlan()
@@ -49,13 +67,73 @@ final class PlanViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
         XCTAssertEqual(requests.map(\.regenerationAttempt), [0, 1])
+        XCTAssertEqual(requests.map(\.countryCode), ["US", "US"])
+        XCTAssertEqual(requests.map(\.budgetAmount), [100, 100])
         XCTAssertTrue(viewModel.isUnlocked)
         XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
+        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (0)")
+        XCTAssertTrue(viewModel.isRefinePlanDisabled)
+    }
+
+    func testUnlockedPlanShowsOneRefineBeforeUse() async {
+        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.unlockCurrentPlan()
+
+        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (1)")
+        XCTAssertFalse(viewModel.isRefinePlanDisabled)
+    }
+
+    func testGeneratePreviewRequiresCountryCode() async {
+        var didGenerate = false
+        let viewModel = PlanViewModel(generate: { _ in
+            didGenerate = true
+            return Self.samplePlan(id: "plan_one")
+        })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+
+        XCTAssertFalse(didGenerate)
+        XCTAssertNil(viewModel.currentPlan)
+        XCTAssertEqual(viewModel.errorMessage, "Choose a suggested area or enter a more specific city and country.")
+    }
+
+    func testGeneratePreviewRequiresAIDisclosureAcceptance() async {
+        var didGenerate = false
+        let viewModel = PlanViewModel(generate: { _ in
+            didGenerate = true
+            return Self.samplePlan(id: "plan_one")
+        })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+
+        await viewModel.generatePreview()
+
+        XCTAssertFalse(didGenerate)
+        XCTAssertNil(viewModel.currentPlan)
+        XCTAssertEqual(viewModel.errorMessage, "Accept the AI disclosure to create your plan.")
+        XCTAssertTrue(viewModel.isCreatePlanDisabled)
+    }
+
+    func testAcceptingAIDisclosureEnablesCreatePlan() {
+        let viewModel = PlanViewModel()
+
+        viewModel.hasAcceptedAIDisclosure = true
+
+        XCTAssertFalse(viewModel.isCreatePlanDisabled)
     }
 
     func testSubscriptionPurchaseUnlocksCurrentPlan() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
         viewModel.completeSubscriptionPurchase(success: true)
@@ -68,7 +146,9 @@ final class PlanViewModelTests: XCTestCase {
     func testSubscribedPreviewGeneratesUnlockedPlan() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
         viewModel.setSubscriptionActive(true)
+        viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
 
@@ -83,6 +163,8 @@ final class PlanViewModelTests: XCTestCase {
             return Self.samplePlan(id: "plan_\(count)")
         })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
         viewModel.completeSubscriptionPurchase(success: true)
@@ -91,6 +173,27 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
         XCTAssertEqual(viewModel.remainingUnlockedRegenerates, 1)
         XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
+        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (Unlimited)")
+        XCTAssertFalse(viewModel.isRefinePlanDisabled)
+    }
+
+    func testStartNewDateClearsPlanButKeepsPreferences() async {
+        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.partnerLikes = "bookstores and matcha"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.unlockCurrentPlan()
+        viewModel.startNewDate()
+
+        XCTAssertNil(viewModel.currentPlan)
+        XCTAssertFalse(viewModel.isUnlocked)
+        XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
+        XCTAssertEqual(viewModel.locationLabel, "Williamsburg, Brooklyn")
+        XCTAssertEqual(viewModel.planningAreaCountryCode, "US")
+        XCTAssertEqual(viewModel.partnerLikes, "bookstores and matcha")
     }
 
     private static func samplePlan(id: String) -> DatePlanResponse {

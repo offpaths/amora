@@ -4,7 +4,8 @@ import Foundation
 @MainActor
 final class PlanViewModel: ObservableObject {
     @Published var locationLabel = ""
-    @Published var budgetTier: BudgetTier = .medium
+    @Published var planningAreaCountryCode = ""
+    @Published var budgetAmount = 100
     @Published var vibe: DateVibe = .cozy
     @Published var noDrinking = true
     @Published var durationMinutes = 120
@@ -12,6 +13,7 @@ final class PlanViewModel: ObservableObject {
     @Published var currentPlan: DatePlanResponse?
     @Published var isUnlocked = false
     @Published var hasActiveSubscription = false
+    @Published var hasAcceptedAIDisclosure = false
     @Published var remainingUnlockedRegenerates = 0
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -29,7 +31,36 @@ final class PlanViewModel: ObservableObject {
         isUnlocked && (hasActiveSubscription || remainingUnlockedRegenerates > 0)
     }
 
+    var budgetOptions: [BudgetOption] {
+        BudgetCatalog.options(for: planningAreaCountryCode)
+    }
+
+    var refinePlanButtonTitle: String {
+        if hasActiveSubscription {
+            return "Refine This Plan (Unlimited)"
+        }
+        return "Refine This Plan (\(remainingUnlockedRegenerates))"
+    }
+
+    var isRefinePlanDisabled: Bool {
+        !canRegenerateUnlockedPlan
+    }
+
+    var isCreatePlanDisabled: Bool {
+        !hasAcceptedAIDisclosure
+    }
+
     func generatePreview() async {
+        guard hasAcceptedAIDisclosure else {
+            errorMessage = "Accept the AI disclosure to create your plan."
+            return
+        }
+
+        guard !planningAreaCountryCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = "Choose a suggested area or enter a more specific city and country."
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -68,6 +99,24 @@ final class PlanViewModel: ObservableObject {
         }
     }
 
+    func startNewDate() {
+        currentPlan = nil
+        isUnlocked = false
+        remainingUnlockedRegenerates = 0
+        regenerationAttempt = 0
+        errorMessage = nil
+    }
+
+    func setPlanningArea(label: String, countryCode: String) {
+        locationLabel = label
+        planningAreaCountryCode = countryCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if !budgetOptions.contains(where: { $0.amount == budgetAmount }) {
+            budgetAmount = budgetOptions.min { lhs, rhs in
+                abs(lhs.amount - budgetAmount) < abs(rhs.amount - budgetAmount)
+            }?.amount ?? budgetAmount
+        }
+    }
+
     func regenerateUnlockedPlan() async {
         guard canRegenerateUnlockedPlan else { return }
         if !hasActiveSubscription {
@@ -81,7 +130,8 @@ final class PlanViewModel: ObservableObject {
     private func makeRequest() -> GeneratePlanRequest {
         GeneratePlanRequest(
             locationLabel: locationLabel,
-            budgetTier: budgetTier,
+            countryCode: planningAreaCountryCode,
+            budgetAmount: budgetAmount,
             vibe: vibe,
             noDrinking: noDrinking,
             durationMinutes: durationMinutes,

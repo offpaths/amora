@@ -1,11 +1,48 @@
 import Foundation
 
-enum BudgetTier: String, Codable, CaseIterable, Identifiable {
-    case low = "$"
-    case medium = "$$"
-    case high = "$$$"
+struct BudgetOption: Equatable, Identifiable {
+    var amount: Int
+    var currencyCode: String
+    var isOpenEnded: Bool
 
-    var id: String { rawValue }
+    var id: String { "\(currencyCode)-\(amount)" }
+
+    var label: String {
+        "\(currencyCode) \(amount)\(isOpenEnded ? "+" : "")"
+    }
+}
+
+enum BudgetCatalog {
+    static func currencyCode(for countryCode: String) -> String {
+        countryCurrencyMap[countryCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()] ?? "USD"
+    }
+
+    static func options(for countryCode: String) -> [BudgetOption] {
+        let currencyCode = currencyCode(for: countryCode)
+        let amounts = budgetSteps[currencyCode] ?? budgetSteps["USD"]!
+        return amounts.enumerated().map { index, amount in
+            BudgetOption(amount: amount, currencyCode: currencyCode, isOpenEnded: index == amounts.count - 1)
+        }
+    }
+
+    private static let budgetSteps: [String: [Int]] = [
+        "USD": [50, 100, 150, 200, 300],
+        "GBP": [40, 80, 120, 180, 250],
+        "EUR": [50, 90, 140, 200, 300],
+        "THB": [1000, 2000, 3500, 5000, 8000]
+    ]
+
+    private static let countryCurrencyMap: [String: String] = [
+        "AD": "EUR", "AE": "AED", "AT": "EUR", "AU": "AUD", "BE": "EUR", "BR": "BRL",
+        "CA": "CAD", "CH": "CHF", "CN": "CNY", "CY": "EUR", "CZ": "CZK", "DE": "EUR",
+        "DK": "DKK", "EE": "EUR", "ES": "EUR", "FI": "EUR", "FR": "EUR", "GB": "GBP",
+        "GR": "EUR", "HK": "HKD", "HR": "EUR", "HU": "HUF", "IE": "EUR", "IL": "ILS",
+        "IN": "INR", "IT": "EUR", "JP": "JPY", "KR": "KRW", "LT": "EUR", "LU": "EUR",
+        "LV": "EUR", "MC": "EUR", "MT": "EUR", "MX": "MXN", "MY": "MYR", "NL": "EUR",
+        "NO": "NOK", "NZ": "NZD", "PH": "PHP", "PL": "PLN", "PT": "EUR", "SA": "SAR",
+        "SE": "SEK", "SG": "SGD", "SI": "EUR", "SK": "EUR", "TH": "THB", "TR": "TRY",
+        "TW": "TWD", "US": "USD", "VN": "VND", "ZA": "ZAR"
+    ]
 }
 
 enum DateVibe: String, Codable, CaseIterable, Identifiable {
@@ -21,7 +58,8 @@ enum DateVibe: String, Codable, CaseIterable, Identifiable {
 
 struct GeneratePlanRequest: Codable, Equatable {
     var locationLabel: String
-    var budgetTier: BudgetTier
+    var countryCode: String
+    var budgetAmount: Int
     var vibe: DateVibe
     var noDrinking: Bool
     var durationMinutes: Int
