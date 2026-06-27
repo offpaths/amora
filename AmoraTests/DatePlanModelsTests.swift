@@ -19,6 +19,13 @@ final class DatePlanModelsTests: XCTestCase {
         XCTAssertEqual(options.first?.amount, 50)
     }
 
+    func testBudgetOptionsFallbackToUSDWhenCurrencyHasNoLocalSteps() {
+        let options = BudgetCatalog.options(for: "JP")
+
+        XCTAssertEqual(options.map(\.label), ["USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
+        XCTAssertEqual(options.map(\.currencyCode), ["USD", "USD", "USD", "USD", "USD"])
+    }
+
     func testGeneratePlanRequestEncodesBudgetAmount() throws {
         let request = GeneratePlanRequest(
             locationLabel: "Williamsburg, Brooklyn",

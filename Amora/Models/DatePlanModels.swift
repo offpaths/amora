@@ -18,8 +18,9 @@ enum BudgetCatalog {
     }
 
     static func options(for countryCode: String) -> [BudgetOption] {
-        let currencyCode = currencyCode(for: countryCode)
-        let amounts = budgetSteps[currencyCode] ?? budgetSteps["USD"]!
+        let resolvedCurrencyCode = currencyCode(for: countryCode)
+        let currencyCode = budgetSteps[resolvedCurrencyCode] == nil ? "USD" : resolvedCurrencyCode
+        let amounts = budgetSteps[currencyCode]!
         return amounts.enumerated().map { index, amount in
             BudgetOption(amount: amount, currencyCode: currencyCode, isOpenEnded: index == amounts.count - 1)
         }
