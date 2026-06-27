@@ -79,6 +79,59 @@ export const GeneratePlanRequestSchema = z.object({
   regenerationAttempt: z.number().int().min(0).max(20).optional().default(0)
 });
 
+const TelemetryEventNameSchema = z.enum([
+  "ai_disclosure_accepted",
+  "intake_step_viewed",
+  "planning_area_selected",
+  "preview_generation_started",
+  "preview_generation_succeeded",
+  "preview_generation_failed",
+  "regenerate_started",
+  "regenerate_succeeded",
+  "regenerate_failed",
+  "paywall_viewed",
+  "purchase_started",
+  "purchase_completed",
+  "plan_unlocked",
+  "subscription_status_changed",
+  "new_date_started"
+]);
+
+const TelemetryPropertySchema = z.union([
+  z.string().trim().max(80),
+  z.number().int().min(0).max(1_000_000),
+  z.boolean()
+]);
+
+const BlockedTelemetryPropertyKeys = new Set([
+  "locationLabel",
+  "partnerLikes",
+  "address",
+  "appleMapsQuery",
+  "venueName",
+  "prompt",
+  "personalContext",
+  "exactLocation",
+  "latitude",
+  "longitude"
+]);
+
+export const TelemetryEventSchema = z.object({
+  eventName: TelemetryEventNameSchema,
+  occurredAt: z.string().datetime().optional(),
+  properties: z.record(TelemetryPropertySchema).optional().default({})
+}).superRefine((event, context) => {
+  for (const key of Object.keys(event.properties)) {
+    if (BlockedTelemetryPropertyKeys.has(key)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `blocked telemetry property: ${key}`,
+        path: ["properties", key]
+      });
+    }
+  }
+});
+
 export const PreviewStopSchema = z.object({
   order: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   concept: z.string().trim().min(8).max(160),
@@ -157,3 +210,4 @@ function isValidPaidCostForCurrency(value: string, currencyCode: string): boolea
 
 export type GeneratePlanRequest = z.infer<typeof GeneratePlanRequestSchema>;
 export type DatePlanResponse = z.infer<typeof DatePlanResponseSchema>;
+export type TelemetryEvent = z.infer<typeof TelemetryEventSchema>;

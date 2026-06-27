@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   GeneratePlanRequestSchema,
   DatePlanResponseSchema,
+  TelemetryEventSchema,
   resolveCurrencyCode,
   validatePlanCostsForCurrency
 } from "../src/schema";
@@ -155,6 +156,46 @@ describe("GeneratePlanRequestSchema", () => {
       noDrinking: true,
       durationMinutes: 120,
       partnerLikes: ""
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("TelemetryEventSchema", () => {
+  it("accepts coarse funnel analytics without personal text", () => {
+    const result = TelemetryEventSchema.safeParse({
+      eventName: "preview_generation_succeeded",
+      occurredAt: "2026-06-27T12:00:00.000Z",
+      properties: {
+        countryCode: "US",
+        budgetAmount: 100,
+        vibe: "cozy",
+        durationMinutes: 120,
+        noDrinking: true,
+        hasActiveSubscription: false
+      }
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects raw personal planning fields", () => {
+    const result = TelemetryEventSchema.safeParse({
+      eventName: "preview_generation_succeeded",
+      properties: {
+        locationLabel: "Williamsburg, Brooklyn",
+        partnerLikes: "private context pasted by the user"
+      }
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects unknown events", () => {
+    const result = TelemetryEventSchema.safeParse({
+      eventName: "typed_everything",
+      properties: {}
     });
 
     expect(result.success).toBe(false);
