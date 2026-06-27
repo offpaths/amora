@@ -26,3 +26,4 @@ Key decisions:
 - Show a simple intermediate loading screen while Amora generates the sealed preview, rather than leaving the user on the form with only a button spinner.
 - Present the free preview as a sealed itinerary where each stop shows concept, vibe, reason, and personalization signal while hiding exact paid details.
 - Show generated date cost estimates in the common local currency of the planning area; do not ask users to pick estimate currency in the MVP.
+- Replace vague `$ / $$ / $$$` budget input with a local-currency stepped budget-for-two control; make clear Amora plans around the amount rather than trying to spend it all.

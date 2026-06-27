@@ -10,6 +10,7 @@
 - The first paid product id is `thoughtful_date_plan_unlock_1`.
 - Strategic monetization is subscription-first, with one-plan unlock as a lower-friction fallback.
 - Date-plan cost estimates should use the common local currency of the planning area, while App Store purchase currency remains StoreKit/storefront-managed.
+- Budget input should be a practical local-currency spend comfort for the full date for two people, not a date-quality or impressiveness ladder.
 - Typed planning-area suggestions should stay lightweight and optional; do not force map/radius selection in the MVP.
 - Product and marketing should warn against recycled/copy-pasted dates by making personalization the value.
 - Current event discovery, Google Places, saved profiles, and accounts are out of scope for the MVP.
