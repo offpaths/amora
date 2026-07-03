@@ -38,8 +38,11 @@ struct InputView: View {
                 .padding(.vertical, 24)
             }
             .scrollContentBackground(.hidden)
+            .background(AmoraTheme.background.ignoresSafeArea())
             .navigationTitle(navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(AmoraTheme.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 if step == 1 {
                     ToolbarItem(placement: .principal) {
@@ -52,6 +55,7 @@ struct InputView: View {
                 step = newStep
             }
         }
+        .background(AmoraTheme.background.ignoresSafeArea())
         .amoraScreen()
     }
 
@@ -134,21 +138,54 @@ struct InputView: View {
 
             errorMessageView
 
+            previousPlanCard
+
             returnToExistingPlanButton
 
             PrimaryButton(title: "Continue", isLoading: false) {
-                viewModel.recordIntakeStepViewed(2)
                 step = 2
             }
+        }
+    }
 
-            AnalyticsPrivacyToggle()
+    @ViewBuilder
+    private var previousPlanCard: some View {
+        if viewModel.currentPlan == nil, viewModel.hasSavedUnlockedPlan {
+            Button {
+                viewModel.returnToSavedUnlockedPlan()
+                onReturnToExistingPlan()
+            } label: {
+                SurfaceCard {
+                    HStack(spacing: 12) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(AmoraTheme.oxblood)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Previous plan")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AmoraTheme.ink)
+                            Text("Open your latest unlocked plan saved on this device.")
+                                .font(.caption)
+                                .foregroundStyle(AmoraTheme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer(minLength: 8)
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(AmoraTheme.muted)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
 
     private var shapeTheNightStep: some View {
         VStack(alignment: .leading, spacing: 16) {
             Button {
-                viewModel.recordIntakeStepViewed(1)
                 step = 1
             } label: {
                 Label("Back", systemImage: "chevron.left")
@@ -262,7 +299,7 @@ struct InputView: View {
         case 1:
             return ""
         default:
-            return "Shape the night"
+            return "Plan with Amora"
         }
     }
 
@@ -304,7 +341,7 @@ struct InputView: View {
         locationService.requestPermission()
         do {
             if let area = try await locationService.currentPlanningArea(), !area.label.isEmpty {
-                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode, source: "current_location")
+                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
             }
         } catch {
             viewModel.errorMessage = "We could not detect your area. Enter it manually."
@@ -314,7 +351,7 @@ struct InputView: View {
     private func useSuggestion(_ suggestion: MKLocalSearchCompletion) async {
         do {
             if let area = try await locationSuggestionService.planningArea(for: suggestion) {
-                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode, source: "suggestion")
+                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
             } else {
                 viewModel.setPlanningArea(label: locationSuggestionService.label(for: suggestion), countryCode: "")
                 viewModel.errorMessage = "Choose a suggested area or enter a more specific city and country."
@@ -333,7 +370,7 @@ struct InputView: View {
 
         do {
             if let area = try await locationService.planningArea(for: viewModel.locationLabel) {
-                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode, source: "typed")
+                viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
                 viewModel.errorMessage = nil
             } else {
                 viewModel.errorMessage = "Choose a suggested area or enter a more specific city and country."

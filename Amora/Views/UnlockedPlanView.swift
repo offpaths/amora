@@ -9,7 +9,16 @@ struct UnlockedPlanView: View {
         if let plan = viewModel.currentPlan {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text("Your thoughtful plan")
+                    if viewModel.isShowingSavedUnlockedPlan {
+                        Button(action: onPlanNewDate) {
+                            Label("Back", systemImage: "chevron.left")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AmoraTheme.oxblood)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Text(plan.preview.title)
                         .font(.system(.largeTitle, design: .serif, weight: .bold))
                         .foregroundStyle(AmoraTheme.ink)
                     PillLabel(text: "Estimated total \(plan.lockedPlan.totalEstimatedCost)", tint: AmoraTheme.olive)
@@ -69,19 +78,25 @@ struct UnlockedPlanView: View {
                     }
 
                     if viewModel.isUnlocked {
-                        PrimaryButton(
-                            title: viewModel.refinePlanButtonTitle,
-                            isLoading: viewModel.isLoading,
-                            isDisabled: viewModel.isRefinePlanDisabled
-                        ) {
-                            Task { await viewModel.regenerateUnlockedPlan() }
+                        if viewModel.shouldShowRefinePlanAction {
+                            PrimaryButton(
+                                title: viewModel.refinePlanButtonTitle,
+                                isLoading: viewModel.isLoading,
+                                isDisabled: viewModel.isRefinePlanDisabled
+                            ) {
+                                Task { await viewModel.regenerateUnlockedPlan() }
+                            }
                         }
-                        SecondaryButton("Plan a New Date", systemImage: "plus", action: onPlanNewDate)
+                        if viewModel.shouldShowPlanNewDateAction {
+                            SecondaryButton("Plan a New Date", systemImage: "plus", action: onPlanNewDate)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
             }
+            .scrollContentBackground(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
             .amoraScreen()
         } else {
             InputView(viewModel: viewModel)

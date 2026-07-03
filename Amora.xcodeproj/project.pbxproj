@@ -25,7 +25,9 @@
 		A10000000000000000000016 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* PaywallView.swift */; };
 		A10000000000000000000017 /* UnlockedPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* UnlockedPlanView.swift */; };
 		A10000000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* Assets.xcassets */; };
-		A10000000000000000000019 /* TelemetryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* TelemetryClient.swift */; };
+		A10000000000000000000020 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* PrivacyInfo.xcprivacy */; };
+		A10000000000000000000021 /* UnlockedPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* UnlockedPlanStore.swift */; };
+		A10000000000000000000022 /* PrivacyControlsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* PrivacyControlsTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,7 +61,9 @@
 		A20000000000000000000019 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		A20000000000000000000020 /* UnlockedPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockedPlanView.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A20000000000000000000022 /* TelemetryClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryClient.swift; sourceTree = "<group>"; };
+		A20000000000000000000023 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A20000000000000000000024 /* UnlockedPlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockedPlanStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000025 /* PrivacyControlsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyControlsTests.swift; sourceTree = "<group>"; };
 		E7D9FC242FF00907004E9C09 /* Amora.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Amora.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -97,6 +101,7 @@
 				A20000000000000000000001 /* AmoraApp.swift */,
 				A20000000000000000000002 /* ContentView.swift */,
 				A20000000000000000000021 /* Assets.xcassets */,
+				A20000000000000000000023 /* PrivacyInfo.xcprivacy */,
 				A40000000000000000000003 /* Config */,
 				A40000000000000000000004 /* Models */,
 				A40000000000000000000008 /* Services */,
@@ -129,6 +134,7 @@
 				A20000000000000000000010 /* DatePlanClientTests.swift */,
 				A20000000000000000000012 /* LocationLabelServiceTests.swift */,
 				A20000000000000000000014 /* PlanViewModelTests.swift */,
+				A20000000000000000000025 /* PrivacyControlsTests.swift */,
 			);
 			path = AmoraTests;
 			sourceTree = "<group>";
@@ -156,7 +162,7 @@
 				A20000000000000000000009 /* DatePlanClient.swift */,
 				A20000000000000000000011 /* LocationLabelService.swift */,
 				A20000000000000000000015 /* PurchaseService.swift */,
-				A20000000000000000000022 /* TelemetryClient.swift */,
+				A20000000000000000000024 /* UnlockedPlanStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -263,6 +269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000018 /* Assets.xcassets in Resources */,
+				A10000000000000000000020 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,7 +295,7 @@
 				A10000000000000000000008 /* LocationLabelService.swift in Sources */,
 				A10000000000000000000010 /* PlanViewModel.swift in Sources */,
 				A10000000000000000000012 /* PurchaseService.swift in Sources */,
-				A10000000000000000000019 /* TelemetryClient.swift in Sources */,
+				A10000000000000000000021 /* UnlockedPlanStore.swift in Sources */,
 				A10000000000000000000013 /* Components.swift in Sources */,
 				A10000000000000000000014 /* InputView.swift in Sources */,
 				A10000000000000000000015 /* PreviewPlanView.swift in Sources */,
@@ -305,6 +312,7 @@
 				A10000000000000000000007 /* DatePlanClientTests.swift in Sources */,
 				A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */,
 				A10000000000000000000011 /* PlanViewModelTests.swift in Sources */,
+				A10000000000000000000022 /* PrivacyControlsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -351,17 +359,22 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG5JF6U6C9;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Amora uses your location to suggest a nearby planning area.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.planwithamora.Amora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -374,17 +387,22 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG5JF6U6C9;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Amora uses your location to suggest a nearby planning area.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.planwithamora.Amora;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};

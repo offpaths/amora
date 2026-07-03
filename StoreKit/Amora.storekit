@@ -14,21 +14,7 @@
 
   ],
   "products" : [
-    {
-      "displayPrice" : "4.99",
-      "familyShareable" : false,
-      "internalID" : "1990C089",
-      "localizations" : [
-        {
-          "description" : "Unlock the exact 3-stop thoughtful date plan.",
-          "displayName" : "Unlock 1 Thoughtful Date Plan",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "thoughtful_date_plan_unlock_1",
-      "referenceName" : "Unlock 1 Thoughful Date Plan",
-      "type" : "Consumable"
-    }
+
   ],
   "settings" : {
     "_askToBuyEnabled" : false,

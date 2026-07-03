@@ -6,12 +6,10 @@ final class PlanViewModelTests: XCTestCase {
     override func setUp() {
         super.setUp()
         UserDefaults.standard.removeObject(forKey: "hasAcceptedAIDisclosure")
-        UserDefaults.standard.removeObject(forKey: TelemetryClient.analyticsEnabledKey)
     }
 
     override func tearDown() {
         UserDefaults.standard.removeObject(forKey: "hasAcceptedAIDisclosure")
-        UserDefaults.standard.removeObject(forKey: TelemetryClient.analyticsEnabledKey)
         super.tearDown()
     }
 
@@ -20,7 +18,7 @@ final class PlanViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.budgetAmount, 100)
         XCTAssertEqual(viewModel.vibe, .cozy)
-        XCTAssertTrue(viewModel.noDrinking)
+        XCTAssertFalse(viewModel.noDrinking)
         XCTAssertEqual(viewModel.durationMinutes, 120)
         XCTAssertFalse(viewModel.hasAcceptedAIDisclosure)
         XCTAssertTrue(viewModel.isCreatePlanDisabled)
@@ -48,7 +46,7 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isUnlocked)
     }
 
-    func testUnlockCurrentPlanEnablesOneRegenerate() async {
+    func testUnlockCurrentPlanRevealsCurrentPlanWithoutSubscriptionRegenerateAccess() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
@@ -58,10 +56,10 @@ final class PlanViewModelTests: XCTestCase {
         viewModel.unlockCurrentPlan()
 
         XCTAssertTrue(viewModel.isUnlocked)
-        XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
+        XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
     }
 
-    func testRegenerateUnlockedPlanConsumesOneRegenerate() async {
+    func testRegenerateUnlockedPlanRequiresActiveSubscription() async {
         var count = 0
         var requests: [GeneratePlanRequest] = []
         let viewModel = PlanViewModel(generate: { request in
@@ -77,17 +75,17 @@ final class PlanViewModelTests: XCTestCase {
         viewModel.unlockCurrentPlan()
         await viewModel.regenerateUnlockedPlan()
 
-        XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
-        XCTAssertEqual(requests.map(\.regenerationAttempt), [0, 1])
-        XCTAssertEqual(requests.map(\.countryCode), ["US", "US"])
-        XCTAssertEqual(requests.map(\.budgetAmount), [100, 100])
+        XCTAssertEqual(viewModel.currentPlan?.id, "plan_1")
+        XCTAssertEqual(requests.map(\.regenerationAttempt), [0])
+        XCTAssertEqual(requests.map(\.countryCode), ["US"])
+        XCTAssertEqual(requests.map(\.budgetAmount), [100])
         XCTAssertTrue(viewModel.isUnlocked)
         XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
-        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (0)")
+        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan")
         XCTAssertTrue(viewModel.isRefinePlanDisabled)
     }
 
-    func testUnlockedPlanShowsOneRefineBeforeUse() async {
+    func testUnlockedPlanWithoutActiveSubscriptionCannotRefine() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
@@ -96,8 +94,8 @@ final class PlanViewModelTests: XCTestCase {
         await viewModel.generatePreview()
         viewModel.unlockCurrentPlan()
 
-        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (1)")
-        XCTAssertFalse(viewModel.isRefinePlanDisabled)
+        XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan")
+        XCTAssertTrue(viewModel.isRefinePlanDisabled)
     }
 
     func testGeneratePreviewRequiresCountryCode() async {
@@ -168,7 +166,7 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isUnlocked)
     }
 
-    func testSubscribedRegenerateDoesNotConsumeOneTimeRegenerate() async {
+    func testSubscribedRegenerateKeepsUnlimitedRefineAccess() async {
         var count = 0
         let viewModel = PlanViewModel(generate: { _ in
             count += 1
@@ -183,10 +181,136 @@ final class PlanViewModelTests: XCTestCase {
         await viewModel.regenerateUnlockedPlan()
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
-        XCTAssertEqual(viewModel.remainingUnlockedRegenerates, 1)
         XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
         XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (Unlimited)")
         XCTAssertFalse(viewModel.isRefinePlanDisabled)
+    }
+
+    func testCurrentUnlockedSubscriberPlanShowsRefineAction() async {
+        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+
+        XCTAssertTrue(viewModel.shouldShowRefinePlanAction)
+    }
+
+    func testCurrentUnlockedPlanShowsNewDateAction() async {
+        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+
+        XCTAssertTrue(viewModel.shouldShowPlanNewDateAction)
+    }
+
+    func testInactiveSubscriptionCannotRegenerateUnlockedPlan() async {
+        var count = 0
+        let viewModel = PlanViewModel(generate: { _ in
+            count += 1
+            return Self.samplePlan(id: "plan_\(count)")
+        })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+        viewModel.setSubscriptionActive(false)
+        await viewModel.regenerateUnlockedPlan()
+
+        XCTAssertEqual(viewModel.currentPlan?.id, "plan_1")
+        XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
+        XCTAssertTrue(viewModel.isRefinePlanDisabled)
+    }
+
+    func testSubscriptionPurchaseSavesLatestUnlockedPlanOnDevice() async {
+        let store = makeUnlockedPlanStore()
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlockedPlanStore: store
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+
+        XCTAssertEqual(store.load()?.plan.id, "plan_one")
+        XCTAssertEqual(viewModel.savedUnlockedPlan?.plan.id, "plan_one")
+        XCTAssertTrue(viewModel.hasSavedUnlockedPlan)
+    }
+
+    func testViewModelLoadsSavedUnlockedPlanWithoutOpeningItImmediately() {
+        let store = makeUnlockedPlanStore()
+        store.save(plan: Self.samplePlan(id: "saved_plan"))
+
+        let viewModel = PlanViewModel(unlockedPlanStore: store)
+
+        XCTAssertNil(viewModel.currentPlan)
+        XCTAssertFalse(viewModel.isUnlocked)
+        XCTAssertEqual(viewModel.savedUnlockedPlan?.plan.id, "saved_plan")
+        XCTAssertTrue(viewModel.hasSavedUnlockedPlan)
+    }
+
+    func testReturnToSavedUnlockedPlanShowsLatestPlan() {
+        let store = makeUnlockedPlanStore()
+        store.save(plan: Self.samplePlan(id: "saved_plan"))
+        let viewModel = PlanViewModel(unlockedPlanStore: store)
+
+        viewModel.returnToSavedUnlockedPlan()
+
+        XCTAssertEqual(viewModel.currentPlan?.id, "saved_plan")
+        XCTAssertTrue(viewModel.isUnlocked)
+    }
+
+    func testRestoredSavedPlanDoesNotShowRefineAction() {
+        let store = makeUnlockedPlanStore()
+        store.save(plan: Self.samplePlan(id: "saved_plan"))
+        let viewModel = PlanViewModel(unlockedPlanStore: store)
+        viewModel.setSubscriptionActive(true)
+
+        viewModel.returnToSavedUnlockedPlan()
+
+        XCTAssertFalse(viewModel.shouldShowRefinePlanAction)
+        XCTAssertFalse(viewModel.isRefinePlanDisabled)
+    }
+
+    func testRestoredSavedPlanDoesNotShowNewDateAction() {
+        let store = makeUnlockedPlanStore()
+        store.save(plan: Self.samplePlan(id: "saved_plan"))
+        let viewModel = PlanViewModel(unlockedPlanStore: store)
+
+        viewModel.returnToSavedUnlockedPlan()
+
+        XCTAssertFalse(viewModel.shouldShowPlanNewDateAction)
+    }
+
+    func testStartingNewDateKeepsSavedUnlockedPlan() async {
+        let store = makeUnlockedPlanStore()
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlockedPlanStore: store
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        viewModel.completeSubscriptionPurchase(success: true)
+        viewModel.startNewDate()
+
+        XCTAssertNil(viewModel.currentPlan)
+        XCTAssertFalse(viewModel.isUnlocked)
+        XCTAssertEqual(store.load()?.plan.id, "plan_one")
+        XCTAssertEqual(viewModel.savedUnlockedPlan?.plan.id, "plan_one")
     }
 
     func testStartNewDateClearsPlanButKeepsPreferences() async {
@@ -206,6 +330,13 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.locationLabel, "Williamsburg, Brooklyn")
         XCTAssertEqual(viewModel.planningAreaCountryCode, "US")
         XCTAssertEqual(viewModel.partnerLikes, "bookstores and matcha")
+    }
+
+    private func makeUnlockedPlanStore() -> UnlockedPlanStore {
+        let suiteName = "PlanViewModelTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return UnlockedPlanStore(defaults: defaults)
     }
 
     private static func samplePlan(id: String) -> DatePlanResponse {

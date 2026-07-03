@@ -62,6 +62,7 @@ struct PreviewPlanView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
             }
+            .scrollContentBackground(.hidden)
             .scrollBounceBehavior(.basedOnSize)
             .amoraScreen()
         } else {

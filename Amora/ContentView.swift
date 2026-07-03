@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var viewModel = PlanViewModel(telemetry: .live)
+    @StateObject private var viewModel = PlanViewModel()
     @StateObject private var purchaseService = PurchaseService()
     @State private var showingPaywall = false
     @State private var isEditingPreferences = false
@@ -30,7 +30,6 @@ struct ContentView: View {
                 }
             } else {
                 PreviewPlanView(viewModel: viewModel) {
-                    viewModel.recordPaywallViewed()
                     showingPaywall = true
                 } onEditPreferences: {
                     isEditingPreferences = true
@@ -38,15 +37,9 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingPaywall) {
-            PaywallView(purchaseService: purchaseService) { productType in
-                viewModel.recordPurchaseStarted(productType: productType)
-            } onPurchased: { purchase in
-                switch purchase {
-                case .subscription(let success):
-                    viewModel.completeSubscriptionPurchase(success: success)
-                case .onePlan(let success):
-                    viewModel.completePurchase(success: success)
-                }
+            PaywallView(purchaseService: purchaseService) { _ in
+            } onPurchased: { success in
+                viewModel.completeSubscriptionPurchase(success: success)
                 showingPaywall = false
             }
         }
@@ -78,20 +71,20 @@ private struct AIConsentView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("A better plan needs context")
+                    Text("A quick note before we plan")
                         .font(.system(.title2, design: .serif, weight: .bold))
-                    Text("Amora uses your planning area, preferences, and personal details to build a date plan that feels specific instead of generic.")
+                    Text("Share the context that would help the date feel personal. Leave out anything you would not want processed for planning.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
 
                 SurfaceCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        Label("Used to create your plan", systemImage: "sparkles")
+                        Label("Used only to shape this date plan", systemImage: "sparkles")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(AmoraTheme.ink)
 
-                        Text("To make the plan thoughtful, Amora sends the details you provide to our AI provider for generation. Share only what you are comfortable using for this date plan.")
+                        Text("Amora sends your planning area, preferences, and any personal context you provide to our AI provider to generate a thoughtful, specific plan.")
                             .font(.subheadline)
                             .foregroundStyle(AmoraTheme.muted)
 
@@ -103,14 +96,13 @@ private struct AIConsentView: View {
                         .foregroundStyle(AmoraTheme.oxblood)
                     }
                 }
-
-                AnalyticsPrivacyToggle()
-
-                PrimaryButton(title: "Agree and Continue", isLoading: false, action: onAccept)
+                PrimaryButton(title: "Continue", isLoading: false, action: onAccept)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
         }
+        .scrollContentBackground(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
         .amoraScreen()
     }
 }

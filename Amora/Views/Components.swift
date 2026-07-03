@@ -149,12 +149,18 @@ struct SecondaryButton: View {
 
 struct OpeningLoadingView: View {
     var body: some View {
+        OpeningLoadingArtwork()
+            .accessibilityLabel("Amora")
+    }
+}
+
+private struct OpeningLoadingArtwork: View {
+    var body: some View {
         Image("AmoraOpeningLoading")
             .resizable()
             .scaledToFill()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea()
-            .accessibilityLabel("Amora")
     }
 }
 
@@ -174,36 +180,44 @@ struct LoadingPlanView: View {
     @State private var statusMessageIndex = 0
 
     var body: some View {
-        VStack(spacing: 28) {
-            Spacer()
+        ZStack {
+            OpeningLoadingArtwork()
+                .accessibilityHidden(true)
 
-            ZStack {
-                Circle()
-                    .fill(AmoraTheme.brass.opacity(0.12))
-                    .frame(width: 104, height: 104)
+            Color.white.opacity(0.72)
+                .ignoresSafeArea()
 
-                ProgressView()
-                    .tint(AmoraTheme.oxblood)
-                    .scaleEffect(1.25)
+            VStack(spacing: 28) {
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(AmoraTheme.brass.opacity(0.12))
+                        .frame(width: 104, height: 104)
+
+                    ProgressView()
+                        .tint(AmoraTheme.oxblood)
+                        .scaleEffect(1.25)
+                }
+
+                VStack(spacing: 10) {
+                    Text.amoraBrand("Amora is working", baseColor: AmoraTheme.ink)
+                        .font(.system(.title, design: .serif, weight: .bold))
+
+                    Text(Self.statusMessages[statusMessageIndex])
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(AmoraTheme.muted)
+                        .frame(maxWidth: 310)
+                        .id(statusMessageIndex)
+                        .transition(.opacity)
+                }
+
+                Spacer()
             }
-
-            VStack(spacing: 10) {
-                Text.amoraBrand("Amora is working", baseColor: AmoraTheme.ink)
-                    .font(.system(.title, design: .serif, weight: .bold))
-
-                Text(Self.statusMessages[statusMessageIndex])
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(AmoraTheme.muted)
-                    .frame(maxWidth: 310)
-                    .id(statusMessageIndex)
-                    .transition(.opacity)
-            }
-
-            Spacer()
+            .padding(.horizontal, 28)
         }
-        .padding(.horizontal, 28)
-        .amoraScreen()
+        .foregroundStyle(AmoraTheme.ink)
         .task {
             while !Task.isCancelled && statusMessageIndex < Self.statusMessages.count - 1 {
                 try? await Task.sleep(nanoseconds: Self.statusMessageIntervalNanoseconds)
@@ -224,18 +238,6 @@ struct FlowBadges: View {
             ForEach(badges, id: \.self) { badge in
                 PillLabel(text: badge, tint: AmoraTheme.olive)
             }
-        }
-    }
-}
-
-struct AnalyticsPrivacyToggle: View {
-    @AppStorage(TelemetryClient.analyticsEnabledKey) private var isAnalyticsEnabled = true
-
-    var body: some View {
-        SurfaceCard {
-            Toggle("Share app analytics", isOn: $isAnalyticsEnabled)
-                .font(.subheadline.weight(.semibold))
-                .tint(AmoraTheme.oxblood)
         }
     }
 }

@@ -4,7 +4,6 @@ import StoreKit
 
 @MainActor
 final class PurchaseService: ObservableObject {
-    @Published private(set) var unlockProduct: Product?
     @Published private(set) var plusMonthlyProduct: Product?
     @Published private(set) var hasActiveSubscription = false
     @Published private(set) var isLoadingProducts = false
@@ -23,22 +22,12 @@ final class PurchaseService: ObservableObject {
         }
 
         do {
-            let products = try await Product.products(for: [AppConfig.unlockProductID, AppConfig.plusMonthlyProductID])
-            unlockProduct = products.first { $0.id == AppConfig.unlockProductID }
+            let products = try await Product.products(for: AppConfig.storeKitProductIDs)
             plusMonthlyProduct = products.first { $0.id == AppConfig.plusMonthlyProductID }
             await refreshSubscriptionStatus()
         } catch {
-            unlockProduct = nil
             plusMonthlyProduct = nil
         }
-    }
-
-    func purchaseUnlock() async -> Bool {
-        if unlockProduct == nil {
-            await loadProducts()
-        }
-        guard let unlockProduct else { return false }
-        return await purchase(unlockProduct)
     }
 
     func purchasePlusMonthly() async -> Bool {

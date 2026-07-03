@@ -2,14 +2,18 @@ import XCTest
 @testable import Amora
 
 final class DatePlanModelsTests: XCTestCase {
+    func testStoreKitProductIDsAreSubscriptionOnlyForMVP() {
+        XCTAssertEqual(AppConfig.storeKitProductIDs, ["amora_plus_monthly"])
+    }
+
     func testBudgetOptionsUseCountryCurrency() {
         let usOptions = BudgetCatalog.options(for: "US")
-        XCTAssertEqual(usOptions.map(\.label), ["Free", "USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
-        XCTAssertEqual(usOptions.map(\.amount), [0, 50, 100, 150, 200, 300])
+        XCTAssertEqual(usOptions.map(\.label), ["Free", "USD 25", "USD 50", "USD 75", "USD 100", "USD 125", "USD 150", "USD 175", "USD 200", "USD 250", "USD 300+"])
+        XCTAssertEqual(usOptions.map(\.amount), [0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300])
 
         let thailandOptions = BudgetCatalog.options(for: "TH")
-        XCTAssertEqual(thailandOptions.map(\.label), ["Free", "THB 1000", "THB 2000", "THB 3500", "THB 5000", "THB 8000+"])
-        XCTAssertEqual(thailandOptions.map(\.amount), [0, 1000, 2000, 3500, 5000, 8000])
+        XCTAssertEqual(thailandOptions.map(\.label), ["Free", "THB 500", "THB 1000", "THB 1500", "THB 2000", "THB 2500", "THB 3000", "THB 3500", "THB 4000", "THB 5000", "THB 6500", "THB 8000+"])
+        XCTAssertEqual(thailandOptions.map(\.amount), [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6500, 8000])
     }
 
     func testBudgetOptionsFallbackToUSD() {
@@ -22,8 +26,8 @@ final class DatePlanModelsTests: XCTestCase {
     func testBudgetOptionsFallbackToUSDWhenCurrencyHasNoLocalSteps() {
         let options = BudgetCatalog.options(for: "JP")
 
-        XCTAssertEqual(options.map(\.label), ["Free", "USD 50", "USD 100", "USD 150", "USD 200", "USD 300+"])
-        XCTAssertEqual(options.map(\.currencyCode), ["USD", "USD", "USD", "USD", "USD", "USD"])
+        XCTAssertEqual(options.map(\.label), ["Free", "USD 25", "USD 50", "USD 75", "USD 100", "USD 125", "USD 150", "USD 175", "USD 200", "USD 250", "USD 300+"])
+        XCTAssertEqual(options.map(\.currencyCode), ["USD", "USD", "USD", "USD", "USD", "USD", "USD", "USD", "USD", "USD", "USD"])
     }
 
     func testGeneratePlanRequestEncodesBudgetAmount() throws {
