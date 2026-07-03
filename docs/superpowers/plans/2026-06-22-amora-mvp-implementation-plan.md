@@ -14,11 +14,11 @@
 
 - App name: Amora.
 - Bundle id: `com.planwithamora.Amora`.
-- StoreKit product id: `thoughtful_date_plan_unlock_1`.
+- StoreKit product id: `amora_plus_monthly`.
 - Worker endpoint during development: `http://127.0.0.1:8787/generate-plan`.
 - Production Worker route is configured after the MVP builds locally.
 - The iOS project can be scaffolded with Xcode/XcodeBuildMCP during implementation.
-- Current events, Google Places, accounts, subscriptions, route optimization, and reservations stay out of scope.
+- Current events, Google Places, accounts, route optimization, and reservations stay out of scope.
 
 ## File Structure
 
@@ -61,6 +61,7 @@ Key Worker files:
 ### Task 1: Scaffold Worker Package
 
 **Files:**
+
 - Create: `worker/package.json`
 - Create: `worker/tsconfig.json`
 - Create: `worker/wrangler.toml`
@@ -127,7 +128,10 @@ Create `worker/test/schema.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { GeneratePlanRequestSchema, DatePlanResponseSchema } from "../src/schema";
+import {
+  GeneratePlanRequestSchema,
+  DatePlanResponseSchema,
+} from "../src/schema";
 
 describe("GeneratePlanRequestSchema", () => {
   it("accepts a valid MVP request", () => {
@@ -137,7 +141,7 @@ describe("GeneratePlanRequestSchema", () => {
       vibe: "cozy",
       noDrinking: true,
       durationMinutes: 120,
-      partnerLikes: "bookstores, matcha, quiet places"
+      partnerLikes: "bookstores, matcha, quiet places",
     });
 
     expect(result.success).toBe(true);
@@ -150,7 +154,7 @@ describe("GeneratePlanRequestSchema", () => {
       vibe: "cozy",
       noDrinking: true,
       durationMinutes: 95,
-      partnerLikes: ""
+      partnerLikes: "",
     });
 
     expect(result.success).toBe(false);
@@ -166,8 +170,8 @@ describe("DatePlanResponseSchema", () => {
         summaryBadges: ["$$", "2 hours", "No bars"],
         stops: [
           { order: 1, concept: "A cozy conversation starter" },
-          { order: 2, concept: "A personal activity" }
-        ]
+          { order: 2, concept: "A personal activity" },
+        ],
       },
       lockedPlan: {
         totalEstimatedCost: "$60-$90",
@@ -179,10 +183,10 @@ describe("DatePlanResponseSchema", () => {
             appleMapsQuery: "Example Cafe 123 Example St",
             durationMinutes: 40,
             reason: "A calm first stop.",
-            estimatedCost: "$20-$30"
-          }
-        ]
-      }
+            estimatedCost: "$20-$30",
+          },
+        ],
+      },
     });
 
     expect(result.success).toBe(false);
@@ -210,8 +214,20 @@ Create `worker/src/schema.ts`:
 import { z } from "zod";
 
 export const BudgetTierSchema = z.enum(["$", "$$", "$$$"]);
-export const VibeSchema = z.enum(["cozy", "adventurous", "romantic", "low-key", "foodie", "outdoorsy"]);
-export const DurationMinutesSchema = z.union([z.literal(90), z.literal(120), z.literal(180), z.literal(240)]);
+export const VibeSchema = z.enum([
+  "cozy",
+  "adventurous",
+  "romantic",
+  "low-key",
+  "foodie",
+  "outdoorsy",
+]);
+export const DurationMinutesSchema = z.union([
+  z.literal(90),
+  z.literal(120),
+  z.literal(180),
+  z.literal(240),
+]);
 
 export const GeneratePlanRequestSchema = z.object({
   locationLabel: z.string().trim().min(2).max(120),
@@ -219,12 +235,12 @@ export const GeneratePlanRequestSchema = z.object({
   vibe: VibeSchema,
   noDrinking: z.boolean(),
   durationMinutes: DurationMinutesSchema,
-  partnerLikes: z.string().trim().max(500).optional().default("")
+  partnerLikes: z.string().trim().max(500).optional().default(""),
 });
 
 export const PreviewStopSchema = z.object({
   order: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  concept: z.string().trim().min(8).max(160)
+  concept: z.string().trim().min(8).max(160),
 });
 
 export const LockedStopSchema = z.object({
@@ -234,7 +250,7 @@ export const LockedStopSchema = z.object({
   appleMapsQuery: z.string().trim().min(2).max(220),
   durationMinutes: z.number().int().min(15).max(180),
   reason: z.string().trim().min(12).max(260),
-  estimatedCost: z.string().trim().min(1).max(40)
+  estimatedCost: z.string().trim().min(1).max(40),
 });
 
 export const DatePlanResponseSchema = z.object({
@@ -242,12 +258,12 @@ export const DatePlanResponseSchema = z.object({
   preview: z.object({
     title: z.string().trim().min(8).max(120),
     summaryBadges: z.array(z.string().trim().min(1).max(40)).min(2).max(6),
-    stops: z.tuple([PreviewStopSchema, PreviewStopSchema, PreviewStopSchema])
+    stops: z.tuple([PreviewStopSchema, PreviewStopSchema, PreviewStopSchema]),
   }),
   lockedPlan: z.object({
     totalEstimatedCost: z.string().trim().min(1).max(40),
-    stops: z.tuple([LockedStopSchema, LockedStopSchema, LockedStopSchema])
-  })
+    stops: z.tuple([LockedStopSchema, LockedStopSchema, LockedStopSchema]),
+  }),
 });
 
 export type GeneratePlanRequest = z.infer<typeof GeneratePlanRequestSchema>;
@@ -260,7 +276,7 @@ Create temporary `worker/src/index.ts`:
 export default {
   async fetch(): Promise<Response> {
     return new Response("Amora API", { status: 200 });
-  }
+  },
 };
 ```
 
@@ -288,6 +304,7 @@ git commit -m "test: add worker plan schemas"
 ### Task 2: Implement Worker Endpoint With Mockable Generator
 
 **Files:**
+
 - Create: `worker/src/openai.ts`
 - Modify: `worker/src/index.ts`
 - Create: `worker/test/index.test.ts`
@@ -307,7 +324,7 @@ const validRequest: GeneratePlanRequest = {
   vibe: "cozy",
   noDrinking: true,
   durationMinutes: 120,
-  partnerLikes: "bookstores, matcha, quiet places"
+  partnerLikes: "bookstores, matcha, quiet places",
 };
 
 const validPlan: DatePlanResponse = {
@@ -318,8 +335,8 @@ const validPlan: DatePlanResponse = {
     stops: [
       { order: 1, concept: "A cozy conversation starter near Williamsburg" },
       { order: 2, concept: "A personal activity matched to bookstores" },
-      { order: 3, concept: "A relaxed dessert finish nearby" }
-    ]
+      { order: 3, concept: "A relaxed dessert finish nearby" },
+    ],
   },
   lockedPlan: {
     totalEstimatedCost: "$60-$90",
@@ -331,7 +348,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Cafe 123 Example St",
         durationMinutes: 35,
         reason: "A calm first stop that fits the cozy vibe.",
-        estimatedCost: "$20-$30"
+        estimatedCost: "$20-$30",
       },
       {
         order: 2,
@@ -340,7 +357,7 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Bookstore 456 Example Ave",
         durationMinutes: 50,
         reason: "A personal stop aligned with her interests.",
-        estimatedCost: "$10-$25"
+        estimatedCost: "$10-$25",
       },
       {
         order: 3,
@@ -349,14 +366,14 @@ const validPlan: DatePlanResponse = {
         appleMapsQuery: "Example Dessert Bar 789 Example Rd",
         durationMinutes: 35,
         reason: "A relaxed finish that keeps the date low-pressure.",
-        estimatedCost: "$30-$35"
-      }
-    ]
-  }
+        estimatedCost: "$30-$35",
+      },
+    ],
+  },
 };
 
 vi.mock("../src/openai", () => ({
-  generateDatePlan: vi.fn(async () => validPlan)
+  generateDatePlan: vi.fn(async () => validPlan),
 }));
 
 describe("POST /generate-plan", () => {
@@ -365,9 +382,9 @@ describe("POST /generate-plan", () => {
       new Request("http://localhost/generate-plan", {
         method: "POST",
         body: JSON.stringify(validRequest),
-        headers: { "content-type": "application/json" }
+        headers: { "content-type": "application/json" },
       }),
-      { OPENAI_API_KEY: "test-key" }
+      { OPENAI_API_KEY: "test-key" },
     );
 
     expect(response.status).toBe(200);
@@ -379,13 +396,15 @@ describe("POST /generate-plan", () => {
       new Request("http://localhost/generate-plan", {
         method: "POST",
         body: JSON.stringify({ ...validRequest, durationMinutes: 95 }),
-        headers: { "content-type": "application/json" }
+        headers: { "content-type": "application/json" },
       }),
-      { OPENAI_API_KEY: "test-key" }
+      { OPENAI_API_KEY: "test-key" },
     );
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
+    await expect(response.json()).resolves.toMatchObject({
+      error: "invalid_request",
+    });
   });
 });
 ```
@@ -406,13 +425,20 @@ Expected: endpoint tests fail because `generateDatePlan` and endpoint routing ar
 Create `worker/src/openai.ts`:
 
 ```ts
-import { DatePlanResponseSchema, type DatePlanResponse, type GeneratePlanRequest } from "./schema";
+import {
+  DatePlanResponseSchema,
+  type DatePlanResponse,
+  type GeneratePlanRequest,
+} from "./schema";
 
 export interface Env {
   OPENAI_API_KEY: string;
 }
 
-export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Promise<DatePlanResponse> {
+export async function generateDatePlan(
+  input: GeneratePlanRequest,
+  env: Env,
+): Promise<DatePlanResponse> {
   if (!env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
@@ -421,14 +447,14 @@ export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Pr
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
-      "authorization": `Bearer ${env.OPENAI_API_KEY}`,
-      "content-type": "application/json"
+      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      "content-type": "application/json",
     },
     body: JSON.stringify({
       model: "gpt-4.1-mini",
       tools: [{ type: "web_search" }],
-      input: prompt
-    })
+      input: prompt,
+    }),
   });
 
   if (!response.ok) {
@@ -452,12 +478,16 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,
     `Partner likes: ${input.partnerLikes || "not provided"}.`,
     "Do not include current events. Do not reveal exact venues in preview concepts.",
-    "Return exactly 3 preview stops and exactly 3 locked stops."
+    "Return exactly 3 preview stops and exactly 3 locked stops.",
   ].join("\n");
 }
 
 function extractJsonCandidate(payload: unknown): unknown {
-  if (typeof payload === "object" && payload !== null && "output_text" in payload) {
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "output_text" in payload
+  ) {
     const text = String((payload as { output_text: unknown }).output_text);
     return JSON.parse(text);
   }
@@ -501,7 +531,7 @@ export default {
     } catch {
       return json({ error: "generation_failed", retryable: true }, 502);
     }
-  }
+  },
 };
 
 function json(body: unknown, status: number): Response {
@@ -511,8 +541,8 @@ function json(body: unknown, status: number): Response {
       "content-type": "application/json",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type"
-    }
+      "access-control-allow-headers": "content-type",
+    },
   });
 }
 ```
@@ -541,6 +571,7 @@ git commit -m "feat: add worker generate plan endpoint"
 ### Task 3: Add Self-Recovering Structured Output Loop
 
 **Files:**
+
 - Modify: `worker/src/openai.ts`
 - Create: `worker/test/openai.test.ts`
 
@@ -550,7 +581,11 @@ Create `worker/test/openai.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { buildRecoveryPrompt, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
+import {
+  buildRecoveryPrompt,
+  parsePlanCandidate,
+  runRecoveryLoop,
+} from "../src/openai";
 
 const validPlan = {
   id: "plan_test_123",
@@ -560,17 +595,41 @@ const validPlan = {
     stops: [
       { order: 1, concept: "A cozy conversation starter" },
       { order: 2, concept: "A bookstore-aligned activity" },
-      { order: 3, concept: "A relaxed dessert finish" }
-    ]
+      { order: 3, concept: "A relaxed dessert finish" },
+    ],
   },
   lockedPlan: {
     totalEstimatedCost: "$60-$90",
     stops: [
-      { order: 1, venueName: "A", address: "1 St", appleMapsQuery: "A 1 St", durationMinutes: 35, reason: "A thoughtful first stop.", estimatedCost: "$20-$30" },
-      { order: 2, venueName: "B", address: "2 St", appleMapsQuery: "B 2 St", durationMinutes: 50, reason: "A thoughtful second stop.", estimatedCost: "$10-$25" },
-      { order: 3, venueName: "C", address: "3 St", appleMapsQuery: "C 3 St", durationMinutes: 35, reason: "A thoughtful final stop.", estimatedCost: "$30-$35" }
-    ]
-  }
+      {
+        order: 1,
+        venueName: "A",
+        address: "1 St",
+        appleMapsQuery: "A 1 St",
+        durationMinutes: 35,
+        reason: "A thoughtful first stop.",
+        estimatedCost: "$20-$30",
+      },
+      {
+        order: 2,
+        venueName: "B",
+        address: "2 St",
+        appleMapsQuery: "B 2 St",
+        durationMinutes: 50,
+        reason: "A thoughtful second stop.",
+        estimatedCost: "$10-$25",
+      },
+      {
+        order: 3,
+        venueName: "C",
+        address: "3 St",
+        appleMapsQuery: "C 3 St",
+        durationMinutes: 35,
+        reason: "A thoughtful final stop.",
+        estimatedCost: "$30-$35",
+      },
+    ],
+  },
 };
 
 describe("parsePlanCandidate", () => {
@@ -579,13 +638,18 @@ describe("parsePlanCandidate", () => {
   });
 
   it("throws a retryable error for invalid candidates", () => {
-    expect(() => parsePlanCandidate({ ...validPlan, lockedPlan: { stops: [] } })).toThrow("invalid_plan_schema");
+    expect(() =>
+      parsePlanCandidate({ ...validPlan, lockedPlan: { stops: [] } }),
+    ).toThrow("invalid_plan_schema");
   });
 });
 
 describe("buildRecoveryPrompt", () => {
   it("includes validation feedback and the original prompt", () => {
-    const prompt = buildRecoveryPrompt("original prompt", "lockedPlan.stops must contain 3 items");
+    const prompt = buildRecoveryPrompt(
+      "original prompt",
+      "lockedPlan.stops must contain 3 items",
+    );
     expect(prompt).toContain("original prompt");
     expect(prompt).toContain("lockedPlan.stops must contain 3 items");
   });
@@ -596,7 +660,9 @@ describe("runRecoveryLoop", () => {
     let calls = 0;
     const result = await runRecoveryLoop("original prompt", async () => {
       calls += 1;
-      return calls === 1 ? { ...validPlan, lockedPlan: { stops: [] } } : validPlan;
+      return calls === 1
+        ? { ...validPlan, lockedPlan: { stops: [] } }
+        : validPlan;
     });
 
     expect(result).toEqual(validPlan);
@@ -605,7 +671,10 @@ describe("runRecoveryLoop", () => {
 
   it("stops after 5 invalid attempts", async () => {
     await expect(
-      runRecoveryLoop("original prompt", async () => ({ ...validPlan, lockedPlan: { stops: [] } }))
+      runRecoveryLoop("original prompt", async () => ({
+        ...validPlan,
+        lockedPlan: { stops: [] },
+      })),
     ).rejects.toThrow("invalid_plan_schema");
   });
 });
@@ -627,33 +696,42 @@ Expected: fails because `parsePlanCandidate`, `buildRecoveryPrompt`, and `runRec
 Modify `worker/src/openai.ts`:
 
 ```ts
-import { DatePlanResponseSchema, type DatePlanResponse, type GeneratePlanRequest } from "./schema";
+import {
+  DatePlanResponseSchema,
+  type DatePlanResponse,
+  type GeneratePlanRequest,
+} from "./schema";
 
 export interface Env {
   OPENAI_API_KEY: string;
 }
 
-export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Promise<DatePlanResponse> {
+export async function generateDatePlan(
+  input: GeneratePlanRequest,
+  env: Env,
+): Promise<DatePlanResponse> {
   if (!env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 
   const initialPrompt = buildPrompt(input);
-  return runRecoveryLoop(initialPrompt, (prompt) => callOpenAIForJson(prompt, env));
+  return runRecoveryLoop(initialPrompt, (prompt) =>
+    callOpenAIForJson(prompt, env),
+  );
 }
 
 async function callOpenAIForJson(prompt: string, env: Env): Promise<unknown> {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
-      "authorization": `Bearer ${env.OPENAI_API_KEY}`,
-      "content-type": "application/json"
+      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      "content-type": "application/json",
     },
     body: JSON.stringify({
       model: "gpt-4.1-mini",
       tools: [{ type: "web_search" }],
-      input: prompt
-    })
+      input: prompt,
+    }),
   });
 
   if (!response.ok) {
@@ -666,7 +744,7 @@ async function callOpenAIForJson(prompt: string, env: Env): Promise<unknown> {
 
 export async function runRecoveryLoop(
   initialPrompt: string,
-  generateCandidate: (prompt: string) => Promise<unknown>
+  generateCandidate: (prompt: string) => Promise<unknown>,
 ): Promise<DatePlanResponse> {
   let prompt = initialPrompt;
   let lastError = "invalid_plan_schema";
@@ -676,7 +754,8 @@ export async function runRecoveryLoop(
     try {
       return parsePlanCandidate(candidate);
     } catch (error) {
-      lastError = error instanceof Error ? error.message : "invalid_plan_schema";
+      lastError =
+        error instanceof Error ? error.message : "invalid_plan_schema";
       prompt = buildRecoveryPrompt(initialPrompt, lastError);
     }
   }
@@ -692,13 +771,16 @@ export function parsePlanCandidate(candidate: unknown): DatePlanResponse {
   throw new Error("invalid_plan_schema");
 }
 
-export function buildRecoveryPrompt(originalPrompt: string, validationError: string): string {
+export function buildRecoveryPrompt(
+  originalPrompt: string,
+  validationError: string,
+): string {
   return [
     originalPrompt,
     "",
     "The previous response failed schema validation.",
     `Validation error: ${validationError}`,
-    "Correct the response and return a complete valid plan with exactly 3 preview stops and exactly 3 locked stops."
+    "Correct the response and return a complete valid plan with exactly 3 preview stops and exactly 3 locked stops.",
   ].join("\n");
 }
 
@@ -716,12 +798,16 @@ export function buildPrompt(input: GeneratePlanRequest): string {
     `No drinking: ${input.noDrinking ? "yes, avoid alcohol-centered stops" : "no"}.`,
     `Partner likes: ${input.partnerLikes || "not provided"}.`,
     "Do not include current events. Do not reveal exact venues in preview concepts.",
-    "Return exactly 3 preview stops and exactly 3 locked stops."
+    "Return exactly 3 preview stops and exactly 3 locked stops.",
   ].join("\n");
 }
 
 function extractJsonCandidate(payload: unknown): unknown {
-  if (typeof payload === "object" && payload !== null && "output_text" in payload) {
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "output_text" in payload
+  ) {
     const text = String((payload as { output_text: unknown }).output_text);
     return JSON.parse(text);
   }
@@ -753,6 +839,7 @@ git commit -m "test: validate generated plan recovery path"
 ### Task 4: Scaffold iOS Project And Domain Models
 
 **Files:**
+
 - Create: `Amora.xcodeproj/`
 - Create: `Amora/AmoraApp.swift`
 - Create: `Amora/Config/AppConfig.swift`
@@ -781,12 +868,12 @@ AmoraTests/
 
 - [ ] **Step 2: Create StoreKit configuration**
 
-Create `StoreKit/Amora.storekit` in Xcode with one consumable product:
+Create `StoreKit/Amora.storekit` in Xcode with one auto-renewable subscription product:
 
-- Reference Name: `Unlock 1 Thoughtful Date Plan`
-- Product ID: `thoughtful_date_plan_unlock_1`
-- Type: Consumable
-- Price: `4.99`
+- Reference Name: `Amora Plus Monthly`
+- Product ID: `amora_plus_monthly`
+- Type: Auto-Renewable Subscription
+- Price: `9.99`
 
 - [ ] **Step 3: Write model tests**
 
@@ -849,7 +936,7 @@ import Foundation
 
 enum AppConfig {
     static let backendBaseURL = URL(string: "http://127.0.0.1:8787")!
-    static let unlockProductID = "thoughtful_date_plan_unlock_1"
+    static let plusMonthlyProductID = "amora_plus_monthly"
 }
 ```
 
@@ -943,6 +1030,7 @@ git commit -m "test: add iOS app models"
 ### Task 5: Implement iOS Backend Client
 
 **Files:**
+
 - Create: `Amora/Services/DatePlanClient.swift`
 - Create: `AmoraTests/DatePlanClientTests.swift`
 
@@ -1138,6 +1226,7 @@ git commit -m "test: add date plan client"
 ### Task 6: Implement Location Label Service
 
 **Files:**
+
 - Create: `Amora/Services/LocationLabelService.swift`
 - Create: `AmoraTests/LocationLabelServiceTests.swift`
 
@@ -1263,6 +1352,7 @@ git commit -m "test: add editable area label support"
 ### Task 7: Implement View Model State
 
 **Files:**
+
 - Create: `Amora/ViewModels/PlanViewModel.swift`
 - Create: `AmoraTests/PlanViewModelTests.swift`
 
@@ -1453,6 +1543,7 @@ git commit -m "test: add plan view model state"
 ### Task 8: Implement StoreKit Purchase Service
 
 **Files:**
+
 - Create: `Amora/Services/PurchaseService.swift`
 - Modify: `Amora/ViewModels/PlanViewModel.swift`
 
@@ -1525,6 +1616,7 @@ git commit -m "feat: add StoreKit unlock service"
 ### Task 9: Build SwiftUI Screens
 
 **Files:**
+
 - Modify: `Amora/ContentView.swift`
 - Create: `Amora/Views/InputView.swift`
 - Create: `Amora/Views/PreviewPlanView.swift`
@@ -1726,7 +1818,7 @@ struct PaywallView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Unlock 1 Thoughtful Date Plan")
+            Text("Start Amora Plus")
                 .font(.largeTitle.bold())
 
             Text("Make the money you are already spending on the date worth it by planning something that helps her feel seen.")
@@ -1780,7 +1872,7 @@ struct UnlockedPlanView: View {
         return AnyView(
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Your thoughtful plan")
+                    Text("Your Date plan")
                         .font(.largeTitle.bold())
                     PillLabel(text: "Estimated total \(plan.lockedPlan.totalEstimatedCost)")
 
@@ -1882,6 +1974,7 @@ git commit -m "feat: add Amora MVP screens"
 ### Task 10: End-To-End Local Verification
 
 **Files:**
+
 - Modify only if verification finds defects in MVP files.
 
 - [ ] **Step 1: Run Worker tests**
@@ -1924,7 +2017,7 @@ Manual verification:
 - Confirm exact plan unlocks.
 - Confirm 3 exact stops appear.
 - Confirm Apple Maps button opens Maps URL.
-- Confirm one exact-plan regenerate is available after unlock.
+- Confirm exact-plan regeneration is available while subscribed.
 
 - [ ] **Step 5: Commit fixes from verification**
 

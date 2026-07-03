@@ -4,10 +4,10 @@
 - Publish Terms of Use at https://planwithamora.com/terms.
 - Publish Support page at https://planwithamora.com/support.
 - If no site deployment exists in this repo, publish the legal/support pages outside this repo before submission.
-- Confirm App Store Connect products are configured for Amora Plus and one-plan unlock.
-- Confirm StoreKit product ids match the app: `amora_plus_monthly` and `thoughtful_date_plan_unlock_1`.
+- Confirm App Store Connect products are configured for Amora Plus.
+- Confirm StoreKit product ids match the app: `amora_plus_monthly`.
 - Confirm subscription display name, description, duration, and price match in-app paywall copy.
-- Complete App Store Connect App Privacy labels for planning area/location, user content, purchases, support contact data, and any diagnostics collected.
+- Complete App Store Connect App Privacy labels for planning area/location, user content, purchases, and support contact data.
 - Add the public Privacy Policy, Terms of Use, and Support URLs in App Store Connect metadata.
 - Confirm the app icon is present in `Amora/Assets.xcassets/AppIcon.appiconset`.
 - Confirm the archive uses `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`.

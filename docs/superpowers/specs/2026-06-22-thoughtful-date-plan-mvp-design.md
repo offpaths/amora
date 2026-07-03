@@ -115,13 +115,13 @@ Free users can regenerate previews before purchase.
 
 ## Monetization
 
-The MVP uses one StoreKit consumable product:
+The MVP uses one StoreKit subscription product:
 
-- Product: Unlock 1 Thoughtful Date Plan
-- Product id: `thoughtful_date_plan_unlock_1`
-- Target price: $4.99
+- Product: Amora Plus Monthly
+- Product id: `amora_plus_monthly`
+- Target price: $9.99/month
 
-Purchasing unlocks the current generated plan.
+Subscribing unlocks the current generated plan.
 
 The unlocked plan reveals:
 
@@ -130,11 +130,9 @@ The unlocked plan reveals:
 - Short reasons
 - Estimated cost
 - Apple Maps buttons
-- 1 exact-plan regenerate
+- Unlimited exact-plan regeneration while subscribed
 
-No subscription is included in the Thursday MVP.
-
-Unlock state is stored locally on-device for the MVP. Accounts and cross-device restore are out of scope.
+Subscription state is handled through StoreKit for the MVP. Accounts are out of scope.
 
 ## User Flow
 
@@ -147,10 +145,10 @@ Unlock state is stored locally on-device for the MVP. Accounts and cross-device 
 7. App shows the preview.
 8. User can regenerate previews for free.
 9. User taps unlock.
-10. StoreKit presents the purchase flow for Unlock 1 Thoughtful Date Plan.
-11. Successful purchase unlocks the exact plan locally.
+10. StoreKit presents the purchase flow for Amora Plus Monthly.
+11. Successful subscription unlocks the exact plan.
 12. User can open each stop in Apple Maps.
-13. User gets one exact-plan regenerate after unlock.
+13. Active subscribers can regenerate exact plans.
 
 ## Backend API
 
@@ -292,7 +290,7 @@ Manual checks:
 - Preview regenerate.
 - StoreKit sandbox purchase.
 - Full plan unlock.
-- One exact-plan regenerate after unlock.
+- Exact-plan regeneration while subscribed.
 - Apple Maps action opens for each stop.
 - OpenAI API key is absent from the iOS app.
 
@@ -300,8 +298,8 @@ Manual checks:
 
 - User can generate an anonymized preview from current, edited, or typed location area.
 - Preview proves relevance without leaking exact venue names.
-- User can pay $4.99 through StoreKit to unlock the exact plan.
+- User can subscribe through StoreKit to unlock the exact plan.
 - Unlocked plan includes 3 stops, timing, reasons, estimated cost, and Apple Maps actions.
-- Paid user gets one exact-plan regenerate.
+- Active subscribers can regenerate exact plans.
 - Failed generation or failed purchase never charges or unlocks.
 - OpenAI API key is stored only in the Cloudflare Worker environment.

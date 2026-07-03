@@ -107,7 +107,7 @@ The paywall should emphasize:
 - Reasons tied to her interests.
 - Estimated cost.
 - Apple Maps actions.
-- One exact-plan regenerate.
+- Exact-plan regeneration while subscribed.
 
 ### Unlocked Plan
 

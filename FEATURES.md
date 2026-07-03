@@ -84,6 +84,32 @@ Risks:
 - Social sharing adds privacy considerations around locations and personal preferences.
 - Requires clear rules for what is visible before and after unlock.
 
+### Outfit Suggestions
+
+Suggest what the date-goer could wear for the plan, with optional tasteful wording the partner can share.
+
+Possible capabilities:
+
+- Suggest an outfit based on the date plan's venues, activity level, timing, weather, and vibe.
+- Explain why the outfit fits the plan without making the suggestion feel controlling.
+- Offer a short shareable note the partner can send, framed as helpful context rather than a demand.
+- Include practical guidance for comfort, walking, weather, dress codes, and transitions between stops.
+- Respect stated style preferences, modesty preferences, accessibility needs, and no-pressure language.
+
+Why it could matter:
+
+- Helps the date feel more considered and easier to prepare for.
+- Reduces uncertainty when the plan includes multiple stops or mixed formality.
+- Gives the planner a thoughtful way to communicate the vibe of the date.
+- Creates another premium detail that makes the plan feel specific.
+
+Risks:
+
+- Outfit guidance can feel presumptive, gendered, or controlling if framed poorly.
+- Weather, dress code, and venue assumptions can be wrong.
+- Requires careful copy so the suggestion feels optional, respectful, and useful.
+- Could add too much complexity if it asks for detailed clothing preferences too early.
+
 ### Screenshot-Based Personalization
 
 Let users add a screenshot or pasted text from a profile, messages, or notes so Amora can make the date feel more personal.

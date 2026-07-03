@@ -36,14 +36,14 @@ Target user:
 - Single men, roughly 24-38.
 - Already have a date or are trying to plan one.
 - Want to come across thoughtful without spending hours researching.
-- Willing to pay a small premium to avoid fumbling the date.
+- Willing to subscribe to avoid fumbling the date.
 
 Reasoning:
 
 - The pain is sharper than for men already in relationships.
 - Planning anxiety is higher before or during early dating.
 - The outcome feels urgent and high-stakes.
-- A $4.99 unlock can feel small compared with the cost of the date.
+- The subscription can feel small compared with the cost of repeated dates.
 
 Men in relationships can still use the app, but relationship-maintenance positioning should come later.
 
@@ -199,15 +199,12 @@ Paywall:
 
 - Primary strategic offer: monthly subscription for unlimited thoughtful date plans.
 - Primary product: Amora Plus, product id `amora_plus_monthly`, target price $9.99/month.
-- Fallback offer: Unlock 1 Thoughtful Date Plan.
-- Product id: `thoughtful_date_plan_unlock_1`.
-- Target price: $4.99.
-- Paid unlock reveals the exact 3-stop plan and includes 1 exact-plan regenerate.
+- Launch monetization is subscription-only.
 
 Conversion thesis:
 
 - The preview builds trust.
 - The paywall sells specificity and confidence.
-- The unlock price should feel cheap compared with the date, but premium compared with generic date ideas.
+- The subscription should feel affordable compared with repeated date spend, but premium compared with generic date ideas.
 - The purchase protects the larger date spend by helping the user plan something more thoughtful.
 - The subscription sells freshness: every new person, mood, and moment gets a plan that does not feel recycled.

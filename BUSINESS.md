@@ -29,7 +29,7 @@ Possible models:
 
 Why it could matter:
 
-- Creates revenue beyond one-time user purchases.
+- Creates revenue beyond direct user subscriptions.
 - Aligns with businesses that already pay for local discovery.
 - Could make the catalog and current-events features more valuable.
 - Helps monetize high-intent users who are actively deciding where to go.

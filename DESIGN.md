@@ -18,7 +18,7 @@ Key decisions:
 - Treat current-location detection as a convenience, not the primary planning input; typed location suggestions are the reliable path because simulator and device GPS can be broad or mocked.
 - Use OpenAI web search for local venue relevance, but keep current event discovery out of scope.
 - Gate exact venue details behind a StoreKit paywall.
-- Make Amora Plus the primary paywall action and present the one-plan unlock as a lower-emphasis fallback, not an equal competing card.
+- Make Amora Plus the paywall action for unlocking exact plan details.
 - Show free anonymized previews that can regenerate before purchase.
 - Use a schema-validated tool-call recovery pattern for backend plan generation.
 - Use a two-step intake: first ask "What would make her feel seen?" with planning area, then collect vibe, budget, duration, and no-drinking constraints.
@@ -27,6 +27,7 @@ Key decisions:
 - Present the free preview as a sealed itinerary where each stop shows concept, vibe, reason, and personalization signal while hiding exact paid details.
 - Show generated date cost estimates in the common local currency of the planning area; do not ask users to pick estimate currency in the MVP.
 - Replace vague `$ / $$ / $$$` budget input with a local-currency stepped budget-for-two control; make clear Amora plans around the amount rather than trying to spend it all.
+- When a saved unlocked plan exists, the first intake step shows a compact previous-plan card that opens the latest unlocked plan saved on this device.
 
 ## Visual System
 

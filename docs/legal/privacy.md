@@ -7,14 +7,13 @@ Amora collects the information needed to create date-plan previews and unlocked 
 - Planning area or approximate location, when you choose to detect your area.
 - Date preferences, budget, duration, no-drinking preference, and personal context you type or paste.
 - Purchase and entitlement information from Apple StoreKit.
-- Limited app analytics, such as onboarding, preview generation, paywall, purchase, unlock, regeneration, and error events.
 - Support messages you send to Amora.
 
 Amora sends your planning area, preferences, and personal context to our AI provider to generate your plan. Do not paste sensitive information you do not want processed for this purpose.
 
-Amora does not sell personal information. Amora uses collected information to generate plans, provide purchases, operate support, prevent abuse, understand funnel drop-off, and improve reliability.
+Amora does not sell personal information. Amora uses collected information to generate plans, provide purchases, operate support, and prevent abuse.
 
-App analytics are optional and can be turned off in the app. Analytics events are designed not to include raw personal anchors, exact typed locations, exact coordinates, addresses, venue names, or generated plan text.
+Amora does not collect in-app analytics or telemetry. App performance, purchase, and subscription reporting come from App Store Connect.
 
 Location detection is optional. You can type a planning area instead.
 

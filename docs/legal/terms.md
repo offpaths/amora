@@ -7,7 +7,6 @@ Amora provides AI-assisted date-plan previews and paid unlocked itineraries. Gen
 In-app purchases are processed by Apple through StoreKit:
 
 - Amora Plus Monthly unlocks unlimited thoughtful date plans while the subscription is active.
-- Unlock 1 Thoughtful Date Plan unlocks the current plan as a one-time purchase.
 
 Subscriptions renew automatically unless canceled at least 24 hours before the end of the current period. Payment is charged to your Apple Account. You can manage or cancel subscriptions in App Store account settings.
 
