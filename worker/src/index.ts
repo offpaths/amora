@@ -1,5 +1,5 @@
 import { generateDatePlan, type Env } from "./openai";
-import { GeneratePlanRequestSchema, TelemetryEventSchema } from "./schema";
+import { GeneratePlanRequestSchema } from "./schema";
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
@@ -9,7 +9,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname !== "/generate-plan" && url.pathname !== "/telemetry") {
+    if (url.pathname !== "/generate-plan") {
       return json({ error: "not_found" }, 404);
     }
 
@@ -22,10 +22,6 @@ export default {
 
     if (request.method !== "POST") {
       return json({ error: "not_found" }, 404);
-    }
-
-    if (url.pathname === "/telemetry") {
-      return handleTelemetry(request);
     }
 
     if (isRateLimited(request)) {
@@ -52,23 +48,6 @@ export default {
     }
   }
 };
-
-async function handleTelemetry(request: Request): Promise<Response> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: "invalid_json" }, 400);
-  }
-
-  const parsed = TelemetryEventSchema.safeParse(body);
-  if (!parsed.success) {
-    return json({ error: "invalid_request" }, 400);
-  }
-
-  console.log("telemetry_event", JSON.stringify(parsed.data));
-  return json({ accepted: true }, 202);
-}
 
 function isRateLimited(request: Request): boolean {
   const now = Date.now();

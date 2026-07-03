@@ -255,7 +255,7 @@ describe("POST /generate-plan", () => {
 });
 
 describe("POST /telemetry", () => {
-  it("accepts a valid telemetry event", async () => {
+  it("returns not found because analytics collection is removed", async () => {
     const response = await worker.fetch(
       new Request("http://localhost/telemetry", {
         method: "POST",
@@ -271,29 +271,8 @@ describe("POST /telemetry", () => {
       { OPENAI_API_KEY: "test-key" }
     );
 
-    expect(response.status).toBe(202);
-    await expect(response.json()).resolves.toEqual({ accepted: true });
-    expectCorsHeaders(response);
-  });
-
-  it("rejects telemetry events with raw personal fields", async () => {
-    const response = await worker.fetch(
-      new Request("http://localhost/telemetry", {
-        method: "POST",
-        body: JSON.stringify({
-          eventName: "preview_generation_succeeded",
-          properties: {
-            locationLabel: "Williamsburg, Brooklyn",
-            partnerLikes: "private context"
-          }
-        }),
-        headers: { "content-type": "application/json" }
-      }),
-      { OPENAI_API_KEY: "test-key" }
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "invalid_request" });
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
   });
 });
 
@@ -310,16 +289,6 @@ describe("OPTIONS /generate-plan", () => {
     await expect(response.text()).resolves.toBe("");
     expectCorsHeaders(response);
 
-    const telemetryResponse = await worker.fetch(
-      new Request("http://localhost/telemetry", {
-        method: "OPTIONS"
-      }),
-      { OPENAI_API_KEY: "test-key" }
-    );
-
-    expect(telemetryResponse.status).toBe(204);
-    await expect(telemetryResponse.text()).resolves.toBe("");
-    expectCorsHeaders(telemetryResponse);
   });
 
   it("returns not found for other routes", async () => {
