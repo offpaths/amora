@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { VerificationException, VerificationStatus } from "@apple/app-store-server-library";
 import { isActiveAmoraPlusTransaction, verifyActiveSubscriptionProof } from "../src/app-store";
 import type { Env } from "../src/openai";
 
@@ -77,14 +78,36 @@ describe("verifyActiveSubscriptionProof", () => {
     expect(verifier.verifyAndDecodeTransaction).toHaveBeenCalledWith("apple.signed.transaction.jws");
   });
 
-  it("returns false when signed proof verification fails", async () => {
+  it("returns false when signed proof verification has an ordinary verification failure", async () => {
     const verifier = {
       verifyAndDecodeTransaction: vi.fn(async () => {
-        throw new Error("verification failed");
+        throw new VerificationException(VerificationStatus.VERIFICATION_FAILURE);
       })
     };
 
     await expect(verifyActiveSubscriptionProof("bad-proof", baseEnv, verifier)).resolves.toBe(false);
+  });
+
+  it("throws when signed proof verification has a retryable verification failure", async () => {
+    const error = new VerificationException(VerificationStatus.RETRYABLE_VERIFICATION_FAILURE);
+    const verifier = {
+      verifyAndDecodeTransaction: vi.fn(async () => {
+        throw error;
+      })
+    };
+
+    await expect(verifyActiveSubscriptionProof("retryable-proof", baseEnv, verifier)).rejects.toBe(error);
+  });
+
+  it("throws when the verifier has an unexpected infrastructure error", async () => {
+    const error = new Error("certificate fetch failed");
+    const verifier = {
+      verifyAndDecodeTransaction: vi.fn(async () => {
+        throw error;
+      })
+    };
+
+    await expect(verifyActiveSubscriptionProof("apple.signed.transaction.jws", baseEnv, verifier)).rejects.toBe(error);
   });
 
   it("returns false when the bundle id is missing", async () => {

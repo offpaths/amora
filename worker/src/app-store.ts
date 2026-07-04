@@ -1,5 +1,11 @@
 import { Buffer } from "node:buffer";
-import { Environment, SignedDataVerifier, type JWSTransactionDecodedPayload } from "@apple/app-store-server-library";
+import {
+  Environment,
+  SignedDataVerifier,
+  VerificationException,
+  VerificationStatus,
+  type JWSTransactionDecodedPayload
+} from "@apple/app-store-server-library";
 import type { Env } from "./openai";
 
 const PLUS_PRODUCT_ID = "amora_plus_monthly";
@@ -23,8 +29,17 @@ export async function verifyActiveSubscriptionProof(
     const activeVerifier = verifier ?? await createVerifier(config);
     const payload = await activeVerifier.verifyAndDecodeTransaction(signedTransactionInfo);
     return isActiveAmoraPlusTransactionForConfig(payload, config);
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof AppStoreConfigError) {
+      return false;
+    }
+    if (error instanceof VerificationException) {
+      if (error.status === VerificationStatus.RETRYABLE_VERIFICATION_FAILURE) {
+        throw error;
+      }
+      return false;
+    }
+    throw error;
   }
 }
 
@@ -86,9 +101,11 @@ async function loadAppleRootCertificates(): Promise<Buffer[]> {
   return cachedRootCertificates;
 }
 
+class AppStoreConfigError extends Error {}
+
 function required(value: string | undefined): string {
   if (!value) {
-    throw new Error("app_store_not_configured");
+    throw new AppStoreConfigError("app_store_not_configured");
   }
   return value;
 }
@@ -103,7 +120,7 @@ function resolveAppStoreConfig(env: Env): AppStoreConfig {
   const bundleId = required(env.APP_STORE_BUNDLE_ID);
   const environment = env.APP_STORE_ENVIRONMENT ?? "Sandbox";
   if (environment !== "Sandbox" && environment !== "Production") {
-    throw new Error("app_store_invalid_environment");
+    throw new AppStoreConfigError("app_store_invalid_environment");
   }
 
   if (environment === "Sandbox") {
@@ -112,7 +129,7 @@ function resolveAppStoreConfig(env: Env): AppStoreConfig {
 
   const appAppleId = Number(env.APP_STORE_APP_APPLE_ID);
   if (!Number.isFinite(appAppleId) || appAppleId <= 0 || !Number.isInteger(appAppleId)) {
-    throw new Error("app_store_invalid_app_apple_id");
+    throw new AppStoreConfigError("app_store_invalid_app_apple_id");
   }
   return { bundleId, environment, appAppleId };
 }
