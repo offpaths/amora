@@ -73,7 +73,25 @@ struct GeneratePlanRequest: Codable, Equatable {
 
 struct DatePlanResponse: Codable, Equatable, Identifiable {
     var id: String
+    var planToken: String?
     var preview: PlanPreview
+    var lockedPlan: LockedPlan!
+
+    init(id: String, planToken: String? = nil, preview: PlanPreview, lockedPlan: LockedPlan? = nil) {
+        self.id = id
+        self.planToken = planToken
+        self.preview = preview
+        self.lockedPlan = lockedPlan
+    }
+}
+
+struct UnlockPlanRequest: Codable, Equatable {
+    var planToken: String
+    var signedTransactionInfo: String
+}
+
+struct UnlockedPlanResponse: Codable, Equatable, Identifiable {
+    var id: String
     var lockedPlan: LockedPlan
 }
 

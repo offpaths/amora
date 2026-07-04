@@ -11,21 +11,14 @@ final class DatePlanClientTests: XCTestCase {
         let responseJSON = """
         {
           "id": "plan_test_123",
+          "planToken": "0123456789abcdef0123456789abcdef",
           "preview": {
             "title": "A cozy 2-hour plan near Williamsburg",
-            "summaryBadges": ["$$", "2 hours", "No bars"],
+            "summaryBadges": ["USD 60-90", "2 hours", "No bars"],
             "stops": [
               { "order": 1, "concept": "A cozy conversation starter" },
               { "order": 2, "concept": "A personal activity" },
               { "order": 3, "concept": "A relaxed dessert finish" }
-            ]
-          },
-          "lockedPlan": {
-            "totalEstimatedCost": "$60-$90",
-            "stops": [
-              { "order": 1, "venueName": "A", "address": "1 St", "appleMapsQuery": "A 1 St", "durationMinutes": 35, "reason": "A thoughtful first stop.", "estimatedCost": "$20-$30" },
-              { "order": 2, "venueName": "B", "address": "2 St", "appleMapsQuery": "B 2 St", "durationMinutes": 50, "reason": "A thoughtful second stop.", "estimatedCost": "$10-$25" },
-              { "order": 3, "venueName": "C", "address": "3 St", "appleMapsQuery": "C 3 St", "durationMinutes": 35, "reason": "A thoughtful final stop.", "estimatedCost": "$30-$35" }
             ]
           }
         }
@@ -56,7 +49,43 @@ final class DatePlanClientTests: XCTestCase {
         )
 
         XCTAssertEqual(plan.id, "plan_test_123")
-        XCTAssertEqual(plan.lockedPlan.stops.count, 3)
+        XCTAssertEqual(plan.planToken, "0123456789abcdef0123456789abcdef")
+        XCTAssertNil(plan.lockedPlan)
+    }
+
+    func testUnlockPlanPostsTokenAndSignedTransactionInfo() async throws {
+        let responseJSON = """
+        {
+          "id": "plan_test_123",
+          "lockedPlan": {
+            "totalEstimatedCost": "USD 60-90",
+            "stops": [
+              { "order": 1, "venueName": "A", "address": "1 St", "appleMapsQuery": "A 1 St", "durationMinutes": 35, "reason": "A thoughtful first stop.", "estimatedCost": "USD 20-30" },
+              { "order": 2, "venueName": "B", "address": "2 St", "appleMapsQuery": "B 2 St", "durationMinutes": 50, "reason": "A thoughtful second stop.", "estimatedCost": "USD 10-25" },
+              { "order": 3, "venueName": "C", "address": "3 St", "appleMapsQuery": "C 3 St", "durationMinutes": 35, "reason": "A thoughtful final stop.", "estimatedCost": "USD 30-35" }
+            ]
+          }
+        }
+        """.data(using: .utf8)!
+
+        URLProtocolStub.requestHandler = { request in
+            XCTAssertEqual(request.url?.path, "/unlock-plan")
+            XCTAssertEqual(request.httpMethod, "POST")
+            let body = try XCTUnwrap(request.httpBodyData)
+            let encoded = try JSONDecoder().decode(UnlockPlanRequest.self, from: body)
+            XCTAssertEqual(encoded.planToken, "0123456789abcdef0123456789abcdef")
+            XCTAssertEqual(encoded.signedTransactionInfo, "apple.signed.transaction.jws")
+            return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!, responseJSON)
+        }
+
+        let client = DatePlanClient(baseURL: URL(string: "https://example.com")!, session: .stubbed)
+        let unlocked = try await client.unlockPlan(
+            planToken: "0123456789abcdef0123456789abcdef",
+            signedTransactionInfo: "apple.signed.transaction.jws"
+        )
+
+        XCTAssertEqual(unlocked.id, "plan_test_123")
+        XCTAssertEqual(unlocked.lockedPlan.stops.count, 3)
     }
 
     func testGeneratePlanThrowsGenerationFailedForBackendError() async {
