@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { generateDatePlan, type Env } from "../src/openai";
-import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
+import { generateDatePlan } from "../src/openai";
+import type { WorkerEnv } from "../src/index";
+import type { DatePlanResponse, GeneratePlanPreviewResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
   locationLabel: "Williamsburg, Brooklyn",
@@ -85,14 +86,49 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function createEnv(): Env {
+function createEnv(): WorkerEnv {
+  const planStore = new Map<string, string>();
+
   return {
     OPENAI_API_KEY: "test-key",
     PLANS: {
-      put: vi.fn(async () => undefined),
-      get: vi.fn(async () => null)
-    }
+      put: vi.fn(async (key: string, value: string) => {
+        planStore.set(key, value);
+      }),
+      get: vi.fn(async (key: string) => planStore.get(key) ?? null)
+    },
+    RATE_LIMITER: new TestRateLimiterNamespace() as unknown as DurableObjectNamespace
   };
+}
+
+class TestRateLimiterNamespace {
+  private readonly buckets = new Map<string, { count: number; resetAt: number }>();
+
+  idFromName(name: string): DurableObjectId {
+    return { toString: () => name } as DurableObjectId;
+  }
+
+  get(id: DurableObjectId): DurableObjectStub {
+    return {
+      fetch: async () => {
+        const key = id.toString();
+        const now = Date.now();
+        const bucket = this.buckets.get(key);
+
+        if (!bucket || bucket.resetAt <= now) {
+          this.buckets.set(key, { count: 1, resetAt: now + 10 * 60 * 1000 });
+          return new Response(null, { status: 204 });
+        }
+
+        if (bucket.count >= 10) {
+          return new Response(null, { status: 429 });
+        }
+
+        bucket.count += 1;
+        return new Response(null, { status: 204 });
+      }
+    } as unknown as DurableObjectStub;
+  }
 }
 
 describe("POST /generate-plan", () => {
@@ -108,12 +144,20 @@ describe("POST /generate-plan", () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(validPlan);
+    const body = await response.json() as GeneratePlanPreviewResponse & { lockedPlan?: unknown };
+    expect(body).toMatchObject({
+      id: validPlan.id,
+      preview: validPlan.preview
+    });
+    expect(body.planToken).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.lockedPlan).toBeUndefined();
+    expect(env.PLANS.put).toHaveBeenCalledOnce();
     expect(generateDatePlan).toHaveBeenCalledWith(validRequest, env);
     expectCorsHeaders(response);
   });
 
   it("allows requests up to the per-client rate limit", async () => {
+    const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
       const response = await worker.fetch(
         new Request("http://localhost/generate-plan", {
@@ -124,7 +168,7 @@ describe("POST /generate-plan", () => {
             "cf-connecting-ip": "203.0.113.10"
           }
         }),
-        createEnv()
+        env
       );
 
       expect(response.status).toBe(200);
@@ -134,6 +178,7 @@ describe("POST /generate-plan", () => {
   });
 
   it("returns a retryable rate limit error after too many requests from one client", async () => {
+    const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
       await worker.fetch(
         new Request("http://localhost/generate-plan", {
@@ -144,7 +189,7 @@ describe("POST /generate-plan", () => {
             "cf-connecting-ip": "203.0.113.20"
           }
         }),
-        createEnv()
+        env
       );
     }
 
@@ -157,7 +202,7 @@ describe("POST /generate-plan", () => {
           "cf-connecting-ip": "203.0.113.20"
         }
       }),
-      createEnv()
+      env
     );
 
     expect(response.status).toBe(429);
@@ -167,6 +212,7 @@ describe("POST /generate-plan", () => {
   });
 
   it("tracks rate limits separately by client IP", async () => {
+    const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
       await worker.fetch(
         new Request("http://localhost/generate-plan", {
@@ -177,7 +223,7 @@ describe("POST /generate-plan", () => {
             "x-forwarded-for": "203.0.113.30, 198.51.100.1"
           }
         }),
-        createEnv()
+        env
       );
     }
 
@@ -190,7 +236,7 @@ describe("POST /generate-plan", () => {
           "x-forwarded-for": "203.0.113.30, 198.51.100.1"
         }
       }),
-      createEnv()
+      env
     );
     const allowedResponse = await worker.fetch(
       new Request("http://localhost/generate-plan", {
@@ -201,7 +247,7 @@ describe("POST /generate-plan", () => {
           "x-forwarded-for": "203.0.113.31, 198.51.100.1"
         }
       }),
-      createEnv()
+      env
     );
 
     expect(blockedResponse.status).toBe(429);
@@ -234,6 +280,24 @@ describe("POST /generate-plan", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "invalid_json" });
+  });
+
+  it("rejects oversized requests before parsing JSON", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: "{",
+        headers: {
+          "content-type": "application/json",
+          "content-length": "16385"
+        }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ error: "request_too_large" });
+    expect(generateDatePlan).not.toHaveBeenCalled();
   });
 
   it("returns a retryable error when generation fails", async () => {
