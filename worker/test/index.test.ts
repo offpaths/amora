@@ -149,9 +149,18 @@ describe("POST /generate-plan", () => {
       id: validPlan.id,
       preview: validPlan.preview
     });
+    expect(Object.keys(body).sort()).toEqual(["id", "planToken", "preview"]);
     expect(body.planToken).toMatch(/^[a-f0-9]{64}$/);
     expect(body.lockedPlan).toBeUndefined();
     expect(env.PLANS.put).toHaveBeenCalledOnce();
+    const storedPayload = JSON.parse(vi.mocked(env.PLANS.put).mock.calls[0][1]);
+    expect(storedPayload).toEqual({
+      id: validPlan.id,
+      lockedPlan: validPlan.lockedPlan
+    });
+    expect(storedPayload.preview).toBeUndefined();
+    expect(storedPayload.partnerLikes).toBeUndefined();
+    expect(storedPayload.locationLabel).toBeUndefined();
     expect(generateDatePlan).toHaveBeenCalledWith(validRequest, env);
     expectCorsHeaders(response);
   });
@@ -291,6 +300,21 @@ describe("POST /generate-plan", () => {
           "content-type": "application/json",
           "content-length": "16385"
         }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ error: "request_too_large" });
+    expect(generateDatePlan).not.toHaveBeenCalled();
+  });
+
+  it("rejects oversized requests when content-length is missing", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: "x".repeat(16 * 1024 + 1),
+        headers: { "content-type": "application/json" }
       }),
       createEnv()
     );

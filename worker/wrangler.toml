@@ -10,6 +10,11 @@ class_name = "RateLimiter"
 tag = "v1"
 new_sqlite_classes = ["RateLimiter"]
 
+[[kv_namespaces]]
+binding = "PLANS"
+id = "010e036915b54d59bcec89d224b5eab4"
+preview_id = "03bba01fb84c487395fb91c69b60ccee"
+
 [[routes]]
 pattern = "api.planwithamora.com"
 custom_domain = true

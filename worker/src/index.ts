@@ -44,8 +44,11 @@ export default {
 
     let body: unknown;
     try {
-      body = await request.json();
-    } catch {
+      body = await readJsonBody(request);
+    } catch (error) {
+      if (error instanceof RequestTooLargeError) {
+        return json({ error: "request_too_large" }, 413);
+      }
       return json({ error: "invalid_json" }, 400);
     }
 
@@ -64,6 +67,17 @@ export default {
     }
   }
 };
+
+class RequestTooLargeError extends Error {}
+
+async function readJsonBody(request: Request): Promise<unknown> {
+  const text = await request.text();
+  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) {
+    throw new RequestTooLargeError();
+  }
+
+  return JSON.parse(text);
+}
 
 export class RateLimiter {
   constructor(private readonly state: DurableObjectState) {}
