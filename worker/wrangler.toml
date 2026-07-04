@@ -2,6 +2,14 @@ name = "amora-api"
 main = "src/index.ts"
 compatibility_date = "2026-06-22"
 
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]
+
 [[routes]]
 pattern = "api.planwithamora.com"
 custom_domain = true
