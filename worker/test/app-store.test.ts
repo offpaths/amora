@@ -86,4 +86,75 @@ describe("verifyActiveSubscriptionProof", () => {
 
     await expect(verifyActiveSubscriptionProof("bad-proof", baseEnv, verifier)).resolves.toBe(false);
   });
+
+  it("returns false when the bundle id is missing", async () => {
+    const verifier = {
+      verifyAndDecodeTransaction: vi.fn(async () => ({
+        bundleId: "com.planwithamora.Amora",
+        productId: "amora_plus_monthly",
+        environment: "Sandbox",
+        expiresDate: Date.now() + 86_400_000
+      }))
+    };
+    const env = { ...baseEnv, APP_STORE_BUNDLE_ID: undefined };
+
+    await expect(verifyActiveSubscriptionProof("apple.signed.transaction.jws", env, verifier)).resolves.toBe(false);
+    expect(verifier.verifyAndDecodeTransaction).not.toHaveBeenCalled();
+  });
+
+  it("returns false when Production is missing the app Apple ID", async () => {
+    const verifier = {
+      verifyAndDecodeTransaction: vi.fn(async () => ({
+        bundleId: "com.planwithamora.Amora",
+        productId: "amora_plus_monthly",
+        environment: "Production",
+        expiresDate: Date.now() + 86_400_000
+      }))
+    };
+    const env = {
+      ...baseEnv,
+      APP_STORE_ENVIRONMENT: "Production",
+      APP_STORE_APP_APPLE_ID: undefined
+    };
+
+    await expect(verifyActiveSubscriptionProof("apple.signed.transaction.jws", env, verifier)).resolves.toBe(false);
+    expect(verifier.verifyAndDecodeTransaction).not.toHaveBeenCalled();
+  });
+
+  it.each(["not-a-number", "NaN", "0", "-1"])(
+    "returns false when Production has invalid app Apple ID %s",
+    async (appAppleId) => {
+      const verifier = {
+        verifyAndDecodeTransaction: vi.fn(async () => ({
+          bundleId: "com.planwithamora.Amora",
+          productId: "amora_plus_monthly",
+          environment: "Production",
+          expiresDate: Date.now() + 86_400_000
+        }))
+      };
+      const env = {
+        ...baseEnv,
+        APP_STORE_ENVIRONMENT: "Production",
+        APP_STORE_APP_APPLE_ID: appAppleId
+      };
+
+      await expect(verifyActiveSubscriptionProof("apple.signed.transaction.jws", env, verifier)).resolves.toBe(false);
+      expect(verifier.verifyAndDecodeTransaction).not.toHaveBeenCalled();
+    }
+  );
+
+  it("returns false when the configured App Store environment is invalid", async () => {
+    const verifier = {
+      verifyAndDecodeTransaction: vi.fn(async () => ({
+        bundleId: "com.planwithamora.Amora",
+        productId: "amora_plus_monthly",
+        environment: "Staging",
+        expiresDate: Date.now() + 86_400_000
+      }))
+    };
+    const env = { ...baseEnv, APP_STORE_ENVIRONMENT: "Staging" };
+
+    await expect(verifyActiveSubscriptionProof("apple.signed.transaction.jws", env, verifier)).resolves.toBe(false);
+    expect(verifier.verifyAndDecodeTransaction).not.toHaveBeenCalled();
+  });
 });

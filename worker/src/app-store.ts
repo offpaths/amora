@@ -11,6 +11,7 @@ const APPLE_ROOT_CERTIFICATE_URLS = [
 type TransactionVerifier = Pick<SignedDataVerifier, "verifyAndDecodeTransaction">;
 
 let cachedRootCertificates: Buffer[] | undefined;
+const cachedVerifiers = new Map<string, TransactionVerifier>();
 
 export async function verifyActiveSubscriptionProof(
   signedTransactionInfo: string,
@@ -18,25 +19,30 @@ export async function verifyActiveSubscriptionProof(
   verifier?: TransactionVerifier
 ): Promise<boolean> {
   try {
-    const activeVerifier = verifier ?? await createVerifier(env);
+    const config = resolveAppStoreConfig(env);
+    const activeVerifier = verifier ?? await createVerifier(config);
     const payload = await activeVerifier.verifyAndDecodeTransaction(signedTransactionInfo);
-    return isActiveAmoraPlusTransaction(payload, env);
+    return isActiveAmoraPlusTransactionForConfig(payload, config);
   } catch {
     return false;
   }
 }
 
 export function isActiveAmoraPlusTransaction(payload: JWSTransactionDecodedPayload, env: Env): boolean {
-  const bundleId = required(env.APP_STORE_BUNDLE_ID);
-  const environment = env.APP_STORE_ENVIRONMENT ?? "Sandbox";
+  return isActiveAmoraPlusTransactionForConfig(payload, resolveAppStoreConfig(env));
+}
 
-  if (payload.bundleId !== bundleId) {
+function isActiveAmoraPlusTransactionForConfig(
+  payload: JWSTransactionDecodedPayload,
+  config: AppStoreConfig
+): boolean {
+  if (payload.bundleId !== config.bundleId) {
     return false;
   }
   if (payload.productId !== PLUS_PRODUCT_ID) {
     return false;
   }
-  if (payload.environment !== environment) {
+  if (payload.environment !== config.environment) {
     return false;
   }
   const expiresDate = Number(payload.expiresDate);
@@ -46,11 +52,23 @@ export function isActiveAmoraPlusTransaction(payload: JWSTransactionDecodedPaylo
   return payload.revocationDate === undefined;
 }
 
-async function createVerifier(env: Env): Promise<TransactionVerifier> {
-  const bundleId = required(env.APP_STORE_BUNDLE_ID);
-  const environment = env.APP_STORE_ENVIRONMENT === "Production" ? Environment.PRODUCTION : Environment.SANDBOX;
-  const appAppleId = env.APP_STORE_APP_APPLE_ID ? Number(env.APP_STORE_APP_APPLE_ID) : undefined;
-  return new SignedDataVerifier(await loadAppleRootCertificates(), true, environment, bundleId, appAppleId);
+async function createVerifier(config: AppStoreConfig): Promise<TransactionVerifier> {
+  const cacheKey = `${config.environment}:${config.bundleId}:${config.appAppleId ?? ""}`;
+  const cachedVerifier = cachedVerifiers.get(cacheKey);
+  if (cachedVerifier) {
+    return cachedVerifier;
+  }
+
+  const environment = config.environment === "Production" ? Environment.PRODUCTION : Environment.SANDBOX;
+  const verifier = new SignedDataVerifier(
+    await loadAppleRootCertificates(),
+    true,
+    environment,
+    config.bundleId,
+    config.appAppleId
+  );
+  cachedVerifiers.set(cacheKey, verifier);
+  return verifier;
 }
 
 async function loadAppleRootCertificates(): Promise<Buffer[]> {
@@ -73,4 +91,28 @@ function required(value: string | undefined): string {
     throw new Error("app_store_not_configured");
   }
   return value;
+}
+
+interface AppStoreConfig {
+  bundleId: string;
+  environment: "Sandbox" | "Production";
+  appAppleId?: number;
+}
+
+function resolveAppStoreConfig(env: Env): AppStoreConfig {
+  const bundleId = required(env.APP_STORE_BUNDLE_ID);
+  const environment = env.APP_STORE_ENVIRONMENT ?? "Sandbox";
+  if (environment !== "Sandbox" && environment !== "Production") {
+    throw new Error("app_store_invalid_environment");
+  }
+
+  if (environment === "Sandbox") {
+    return { bundleId, environment };
+  }
+
+  const appAppleId = Number(env.APP_STORE_APP_APPLE_ID);
+  if (!Number.isFinite(appAppleId) || appAppleId <= 0 || !Number.isInteger(appAppleId)) {
+    throw new Error("app_store_invalid_app_apple_id");
+  }
+  return { bundleId, environment, appAppleId };
 }
