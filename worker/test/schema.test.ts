@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   GeneratePlanRequestSchema,
   DatePlanResponseSchema,
+  GeneratePlanPreviewResponseSchema,
+  UnlockPlanRequestSchema,
+  UnlockPlanResponseSchema,
   resolveCurrencyCode,
   validatePlanCostsForCurrency
 } from "../src/schema";
@@ -401,6 +404,64 @@ describe("DatePlanResponseSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("GeneratePlanPreviewResponseSchema", () => {
+  it("accepts a preview response without locked plan details", () => {
+    const result = GeneratePlanPreviewResponseSchema.safeParse({
+      id: "plan_test_123",
+      planToken: "0123456789abcdef0123456789abcdef",
+      preview: validDatePlanResponse.preview
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects preview responses that include locked plan details", () => {
+    const result = GeneratePlanPreviewResponseSchema.safeParse({
+      id: "plan_test_123",
+      planToken: "0123456789abcdef0123456789abcdef",
+      preview: validDatePlanResponse.preview,
+      lockedPlan: validDatePlanResponse.lockedPlan
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("UnlockPlanRequestSchema", () => {
+  it("accepts a plan token and signed transaction proof", () => {
+    const result = UnlockPlanRequestSchema.safeParse({
+      planToken: "0123456789abcdef0123456789abcdef",
+      signedTransactionInfo: [
+        "eyJhbGciOiJFUzI1NiJ9",
+        "eyJwcm9kdWN0SWQiOiJhbW9yYV9wbHVzX21vbnRobHkifQ",
+        "signature"
+      ].join(".")
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects blank unlock inputs", () => {
+    const result = UnlockPlanRequestSchema.safeParse({
+      planToken: "",
+      signedTransactionInfo: ""
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("UnlockPlanResponseSchema", () => {
+  it("accepts an unlock response with locked plan details", () => {
+    const result = UnlockPlanResponseSchema.safeParse({
+      id: "plan_test_123",
+      lockedPlan: validDatePlanResponse.lockedPlan
+    });
+
+    expect(result.success).toBe(true);
   });
 });
 
