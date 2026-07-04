@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
+import { verifyActiveSubscriptionProof } from "../src/app-store";
 import { generateDatePlan } from "../src/openai";
 import type { WorkerEnv } from "../src/index";
-import type { DatePlanResponse, GeneratePlanPreviewResponse, GeneratePlanRequest } from "../src/schema";
+import type { DatePlanResponse, GeneratePlanPreviewResponse, GeneratePlanRequest, UnlockPlanResponse } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
   locationLabel: "Williamsburg, Brooklyn",
@@ -80,6 +81,10 @@ const validPlan: DatePlanResponse = {
 
 vi.mock("../src/openai", () => ({
   generateDatePlan: vi.fn(async () => validPlan)
+}));
+
+vi.mock("../src/app-store", () => ({
+  verifyActiveSubscriptionProof: vi.fn(async () => true)
 }));
 
 beforeEach(() => {
@@ -353,6 +358,115 @@ describe("POST /generate-plan", () => {
   });
 });
 
+describe("POST /unlock-plan", () => {
+  it("returns the locked plan for an active subscription and stored plan token", async () => {
+    const env = createEnv();
+    const previewResponse = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(validRequest),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+    const previewBody = await previewResponse.json() as GeneratePlanPreviewResponse;
+
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: previewBody.planToken,
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      id: validPlan.id,
+      lockedPlan: validPlan.lockedPlan
+    } satisfies UnlockPlanResponse);
+    expect(verifyActiveSubscriptionProof).toHaveBeenCalledWith("apple.signed.transaction.jws", env);
+    expectCorsHeaders(response);
+  });
+
+  it("returns subscription required when the subscription proof is inactive", async () => {
+    vi.mocked(verifyActiveSubscriptionProof).mockResolvedValueOnce(false);
+
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "a".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "subscription_required" });
+  });
+
+  it("returns not found when the plan token is missing or stale", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "b".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "plan_not_found" });
+  });
+
+  it("rejects purchaser profile fields before subscription verification", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "c".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws",
+          email: "buyer@example.com"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_request" });
+    expect(verifyActiveSubscriptionProof).not.toHaveBeenCalled();
+  });
+
+  it("returns a retryable verification error when subscription verification throws", async () => {
+    vi.mocked(verifyActiveSubscriptionProof).mockRejectedValueOnce(new Error("unexpected verifier error"));
+
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "d".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: "subscription_verification_failed", retryable: true });
+  });
+});
+
 describe("POST /telemetry", () => {
   it("returns not found because analytics collection is removed", async () => {
     const response = await worker.fetch(
@@ -377,17 +491,18 @@ describe("POST /telemetry", () => {
 
 describe("OPTIONS /generate-plan", () => {
   it("returns 204 for known routes", async () => {
-    const response = await worker.fetch(
-      new Request("http://localhost/generate-plan", {
-        method: "OPTIONS"
-      }),
-      createEnv()
-    );
+    for (const path of ["/generate-plan", "/unlock-plan"]) {
+      const response = await worker.fetch(
+        new Request(`http://localhost${path}`, {
+          method: "OPTIONS"
+        }),
+        createEnv()
+      );
 
-    expect(response.status).toBe(204);
-    await expect(response.text()).resolves.toBe("");
-    expectCorsHeaders(response);
-
+      expect(response.status).toBe(204);
+      await expect(response.text()).resolves.toBe("");
+      expectCorsHeaders(response);
+    }
   });
 
   it("returns not found for other routes", async () => {

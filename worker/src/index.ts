@@ -1,6 +1,7 @@
+import { verifyActiveSubscriptionProof } from "./app-store";
 import { generateDatePlan, type Env } from "./openai";
-import { createPlanToken, storeLockedPlan } from "./plan-store";
-import { GeneratePlanRequestSchema } from "./schema";
+import { createPlanToken, loadLockedPlan, storeLockedPlan } from "./plan-store";
+import { GeneratePlanRequestSchema, UnlockPlanRequestSchema } from "./schema";
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
@@ -19,7 +20,7 @@ export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname !== "/generate-plan") {
+    if (!isKnownRoute(url.pathname)) {
       return json({ error: "not_found" }, 404);
     }
 
@@ -42,31 +43,78 @@ export default {
       return json({ error: "rate_limited", retryable: true }, 429);
     }
 
-    let body: unknown;
-    try {
-      body = await readJsonBody(request);
-    } catch (error) {
-      if (error instanceof RequestTooLargeError) {
-        return json({ error: "request_too_large" }, 413);
-      }
-      return json({ error: "invalid_json" }, 400);
+    if (url.pathname === "/unlock-plan") {
+      return handleUnlockPlan(request, env);
     }
 
-    const parsed = GeneratePlanRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      return json({ error: "invalid_request" }, 400);
-    }
-
-    try {
-      const plan = await generateDatePlan(parsed.data, env);
-      const planToken = createPlanToken();
-      await storeLockedPlan(env.PLANS, planToken, plan);
-      return json({ id: plan.id, planToken, preview: plan.preview }, 200);
-    } catch {
-      return json({ error: "generation_failed", retryable: true }, 502);
-    }
+    return handleGeneratePlan(request, env);
   }
 };
+
+async function handleGeneratePlan(request: Request, env: WorkerEnv): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await readJsonBody(request);
+  } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    return json({ error: "invalid_json" }, 400);
+  }
+
+  const parsed = GeneratePlanRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return json({ error: "invalid_request" }, 400);
+  }
+
+  try {
+    const plan = await generateDatePlan(parsed.data, env);
+    const planToken = createPlanToken();
+    await storeLockedPlan(env.PLANS, planToken, plan);
+    return json({ id: plan.id, planToken, preview: plan.preview }, 200);
+  } catch {
+    return json({ error: "generation_failed", retryable: true }, 502);
+  }
+}
+
+async function handleUnlockPlan(request: Request, env: WorkerEnv): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await readJsonBody(request);
+  } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    return json({ error: "invalid_json" }, 400);
+  }
+
+  const parsed = UnlockPlanRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return json({ error: "invalid_request" }, 400);
+  }
+
+  let hasActiveSubscription: boolean;
+  try {
+    hasActiveSubscription = await verifyActiveSubscriptionProof(parsed.data.signedTransactionInfo, env);
+  } catch {
+    return json({ error: "subscription_verification_failed", retryable: true }, 502);
+  }
+
+  if (!hasActiveSubscription) {
+    return json({ error: "subscription_required" }, 403);
+  }
+
+  const plan = await loadLockedPlan(env.PLANS, parsed.data.planToken);
+  if (!plan) {
+    return json({ error: "plan_not_found" }, 404);
+  }
+
+  return json(plan, 200);
+}
+
+function isKnownRoute(pathname: string): boolean {
+  return pathname === "/generate-plan" || pathname === "/unlock-plan";
+}
 
 class RequestTooLargeError extends Error {}
 
