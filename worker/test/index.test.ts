@@ -447,6 +447,23 @@ describe("POST /unlock-plan", () => {
     expect(verifyActiveSubscriptionProof).not.toHaveBeenCalled();
   });
 
+  it("rejects requests missing a plan token before subscription verification", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_request" });
+    expect(verifyActiveSubscriptionProof).not.toHaveBeenCalled();
+  });
+
   it("returns a retryable verification error when subscription verification throws", async () => {
     vi.mocked(verifyActiveSubscriptionProof).mockRejectedValueOnce(new Error("unexpected verifier error"));
 
