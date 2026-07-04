@@ -75,7 +75,7 @@ struct DatePlanResponse: Codable, Equatable, Identifiable {
     var id: String
     var planToken: String?
     var preview: PlanPreview
-    var lockedPlan: LockedPlan!
+    var lockedPlan: LockedPlan?
 
     init(id: String, planToken: String? = nil, preview: PlanPreview, lockedPlan: LockedPlan? = nil) {
         self.id = id

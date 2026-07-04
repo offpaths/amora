@@ -99,8 +99,9 @@ final class DatePlanModelsTests: XCTestCase {
         XCTAssertEqual(plan.preview.stops[0].vibe, "Calm and warm")
         XCTAssertEqual(plan.preview.stops[0].reason, "A low-pressure first stop gives the date room to settle in.")
         XCTAssertEqual(plan.preview.stops[0].personalizationSignal, "Matches her interest in quiet places.")
-        XCTAssertEqual(plan.lockedPlan.stops.count, 3)
-        XCTAssertEqual(plan.lockedPlan.totalEstimatedCost, "USD 60-90")
-        XCTAssertEqual(plan.lockedPlan.stops[1].estimatedCost, "Free")
+        let lockedPlan = try XCTUnwrap(plan.lockedPlan)
+        XCTAssertEqual(lockedPlan.stops.count, 3)
+        XCTAssertEqual(lockedPlan.totalEstimatedCost, "USD 60-90")
+        XCTAssertEqual(lockedPlan.stops[1].estimatedCost, "Free")
     }
 }
