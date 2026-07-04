@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { generateDatePlan } from "../src/openai";
+import { generateDatePlan, type Env } from "../src/openai";
 import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
@@ -85,20 +85,31 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+function createEnv(): Env {
+  return {
+    OPENAI_API_KEY: "test-key",
+    PLANS: {
+      put: vi.fn(async () => undefined),
+      get: vi.fn(async () => null)
+    }
+  };
+}
+
 describe("POST /generate-plan", () => {
   it("returns a generated plan for a valid request", async () => {
+    const env = createEnv();
     const response = await worker.fetch(
       new Request("http://localhost/generate-plan", {
         method: "POST",
         body: JSON.stringify(validRequest),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      env
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(validPlan);
-    expect(generateDatePlan).toHaveBeenCalledWith(validRequest, { OPENAI_API_KEY: "test-key" });
+    expect(generateDatePlan).toHaveBeenCalledWith(validRequest, env);
     expectCorsHeaders(response);
   });
 
@@ -113,7 +124,7 @@ describe("POST /generate-plan", () => {
             "cf-connecting-ip": "203.0.113.10"
           }
         }),
-        { OPENAI_API_KEY: "test-key" }
+        createEnv()
       );
 
       expect(response.status).toBe(200);
@@ -133,7 +144,7 @@ describe("POST /generate-plan", () => {
             "cf-connecting-ip": "203.0.113.20"
           }
         }),
-        { OPENAI_API_KEY: "test-key" }
+        createEnv()
       );
     }
 
@@ -146,7 +157,7 @@ describe("POST /generate-plan", () => {
           "cf-connecting-ip": "203.0.113.20"
         }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(429);
@@ -166,7 +177,7 @@ describe("POST /generate-plan", () => {
             "x-forwarded-for": "203.0.113.30, 198.51.100.1"
           }
         }),
-        { OPENAI_API_KEY: "test-key" }
+        createEnv()
       );
     }
 
@@ -179,7 +190,7 @@ describe("POST /generate-plan", () => {
           "x-forwarded-for": "203.0.113.30, 198.51.100.1"
         }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
     const allowedResponse = await worker.fetch(
       new Request("http://localhost/generate-plan", {
@@ -190,7 +201,7 @@ describe("POST /generate-plan", () => {
           "x-forwarded-for": "203.0.113.31, 198.51.100.1"
         }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(blockedResponse.status).toBe(429);
@@ -204,7 +215,7 @@ describe("POST /generate-plan", () => {
         body: JSON.stringify({ ...validRequest, durationMinutes: 95 }),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(400);
@@ -218,7 +229,7 @@ describe("POST /generate-plan", () => {
         body: "{",
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(400);
@@ -234,7 +245,7 @@ describe("POST /generate-plan", () => {
         body: JSON.stringify(validRequest),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(502);
@@ -246,7 +257,7 @@ describe("POST /generate-plan", () => {
       new Request("http://localhost/generate-plan", {
         method: "GET"
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(404);
@@ -268,7 +279,7 @@ describe("POST /telemetry", () => {
         }),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(404);
@@ -282,7 +293,7 @@ describe("OPTIONS /generate-plan", () => {
       new Request("http://localhost/generate-plan", {
         method: "OPTIONS"
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(204);
@@ -296,7 +307,7 @@ describe("OPTIONS /generate-plan", () => {
       new Request("http://localhost/anything", {
         method: "OPTIONS"
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(404);

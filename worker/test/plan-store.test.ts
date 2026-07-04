@@ -62,4 +62,12 @@ describe("locked plan storage", () => {
 
     await expect(loadLockedPlan(kv, "missing-token")).resolves.toBeUndefined();
   });
+
+  it("returns undefined when a stored value fails unlock schema validation", async () => {
+    const kv = kvStore();
+    const token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    await kv.put(`locked-plan:${token}`, JSON.stringify({ id: validPlan.id, preview: validPlan.preview }));
+
+    await expect(loadLockedPlan(kv, token)).resolves.toBeUndefined();
+  });
 });
