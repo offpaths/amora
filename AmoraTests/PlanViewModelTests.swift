@@ -46,15 +46,24 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isUnlocked)
     }
 
-    func testUnlockCurrentPlanRevealsCurrentPlanWithoutSubscriptionRegenerateAccess() async {
-        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+    func testUnlockCurrentPlanUsesBackendProofWithoutSubscriptionRegenerateAccess() async {
+        var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { planToken, signedTransactionInfo in
+                unlockCalls.append((planToken, signedTransactionInfo))
+                return Self.sampleUnlockedResponse(id: "plan_one")
+            }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.unlockCurrentPlan()
+        await viewModel.unlockCurrentPlan(signedTransactionInfo: "signed-proof")
 
+        XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_one"])
+        XCTAssertEqual(unlockCalls.map(\.signedTransactionInfo), ["signed-proof"])
         XCTAssertTrue(viewModel.isUnlocked)
         XCTAssertFalse(viewModel.canRegenerateUnlockedPlan)
     }
@@ -62,17 +71,20 @@ final class PlanViewModelTests: XCTestCase {
     func testRegenerateUnlockedPlanRequiresActiveSubscription() async {
         var count = 0
         var requests: [GeneratePlanRequest] = []
-        let viewModel = PlanViewModel(generate: { request in
-            requests.append(request)
-            count += 1
-            return Self.samplePlan(id: "plan_\(count)")
-        })
+        let viewModel = PlanViewModel(
+            generate: { request in
+                requests.append(request)
+                count += 1
+                return Self.samplePlan(id: "plan_\(count)")
+            },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_1") }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.unlockCurrentPlan()
+        await viewModel.unlockCurrentPlan(signedTransactionInfo: "signed-proof")
         await viewModel.regenerateUnlockedPlan()
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_1")
@@ -86,13 +98,16 @@ final class PlanViewModelTests: XCTestCase {
     }
 
     func testUnlockedPlanWithoutActiveSubscriptionCannotRefine() async {
-        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_one") }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.unlockCurrentPlan()
+        await viewModel.unlockCurrentPlan(signedTransactionInfo: "signed-proof")
 
         XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan")
         XCTAssertTrue(viewModel.isRefinePlanDisabled)
@@ -139,90 +154,232 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isCreatePlanDisabled)
     }
 
-    func testSubscriptionPurchaseUnlocksCurrentPlan() async {
-        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+    func testSubscriptionPurchaseUnlocksCurrentPlanThroughBackend() async {
+        var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { planToken, signedTransactionInfo in
+                unlockCalls.append((planToken, signedTransactionInfo))
+                return Self.sampleUnlockedResponse(id: "plan_one")
+            }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
 
+        XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_one"])
+        XCTAssertEqual(unlockCalls.map(\.signedTransactionInfo), ["signed-proof"])
         XCTAssertTrue(viewModel.hasActiveSubscription)
         XCTAssertTrue(viewModel.isUnlocked)
         XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
+        XCTAssertEqual(viewModel.currentPlan?.lockedPlan?.totalEstimatedCost, "$60-$90")
     }
 
-    func testSubscribedPreviewGeneratesUnlockedPlan() async {
+    func testSubscriptionPurchaseWithoutSignedProofDoesNotUnlockCurrentPlan() async {
+        var didUnlock = false
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in
+                didUnlock = true
+                return Self.sampleUnlockedResponse(id: "plan_one")
+            }
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: nil)
+
+        XCTAssertFalse(didUnlock)
+        XCTAssertTrue(viewModel.hasActiveSubscription)
+        XCTAssertFalse(viewModel.isUnlocked)
+        XCTAssertEqual(viewModel.errorMessage, "We could not verify your subscription. Try restoring your purchase.")
+    }
+
+    func testSubscriptionPurchaseUnlockFailureDoesNotUnlockCurrentPlan() async {
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in throw DatePlanClientError.unlockFailed }
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
+
+        XCTAssertTrue(viewModel.hasActiveSubscription)
+        XCTAssertFalse(viewModel.isUnlocked)
+        XCTAssertEqual(viewModel.errorMessage, "We could not unlock this plan. Try restoring your purchase or try again.")
+    }
+
+    func testActiveSubscriptionWithoutProofDoesNotUnlockPreview() async {
         let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
-        viewModel.setSubscriptionActive(true)
+        await viewModel.setSubscriptionActive(true)
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
 
         XCTAssertTrue(viewModel.hasActiveSubscription)
+        XCTAssertFalse(viewModel.isUnlocked)
+    }
+
+    func testActiveSubscriptionWithProofUnlocksPreviewThroughBackend() async {
+        var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { planToken, signedTransactionInfo in
+                unlockCalls.append((planToken, signedTransactionInfo))
+                return Self.sampleUnlockedResponse(id: "plan_one")
+            }
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        await viewModel.setSubscriptionActive(true, signedTransactionInfo: "signed-proof")
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+
+        XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_one"])
+        XCTAssertEqual(unlockCalls.map(\.signedTransactionInfo), ["signed-proof"])
+        XCTAssertTrue(viewModel.hasActiveSubscription)
+        XCTAssertTrue(viewModel.isUnlocked)
+    }
+
+    func testRestoredSubscriptionUnlocksExistingPreviewThroughBackend() async {
+        var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { planToken, signedTransactionInfo in
+                unlockCalls.append((planToken, signedTransactionInfo))
+                return Self.sampleUnlockedResponse(id: "plan_one")
+            }
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        await viewModel.setSubscriptionActive(true, signedTransactionInfo: "signed-proof")
+
+        XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_one"])
+        XCTAssertEqual(unlockCalls.map(\.signedTransactionInfo), ["signed-proof"])
         XCTAssertTrue(viewModel.isUnlocked)
     }
 
     func testSubscribedRegenerateKeepsUnlimitedRefineAccess() async {
         var count = 0
-        let viewModel = PlanViewModel(generate: { _ in
-            count += 1
-            return Self.samplePlan(id: "plan_\(count)")
-        })
+        var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
+        let viewModel = PlanViewModel(
+            generate: { _ in
+                count += 1
+                return Self.samplePlan(id: "plan_\(count)")
+            },
+            unlock: { planToken, signedTransactionInfo in
+                unlockCalls.append((planToken, signedTransactionInfo))
+                return Self.sampleUnlockedResponse(id: planToken.replacingOccurrences(of: "token-", with: ""))
+            }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
         await viewModel.regenerateUnlockedPlan()
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
+        XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_1", "token-plan_2"])
+        XCTAssertEqual(unlockCalls.map(\.signedTransactionInfo), ["signed-proof", "signed-proof"])
         XCTAssertTrue(viewModel.canRegenerateUnlockedPlan)
         XCTAssertEqual(viewModel.refinePlanButtonTitle, "Refine This Plan (Unlimited)")
         XCTAssertFalse(viewModel.isRefinePlanDisabled)
     }
 
-    func testCurrentUnlockedSubscriberPlanShowsRefineAction() async {
-        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+    func testSubscribedRegenerateGenerationFailureDoesNotReunlockStalePlan() async {
+        var count = 0
+        var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
+        let viewModel = PlanViewModel(
+            generate: { _ in
+                count += 1
+                if count == 2 {
+                    throw DatePlanClientError.generationFailed
+                }
+                return Self.samplePlan(id: "plan_\(count)")
+            },
+            unlock: { planToken, signedTransactionInfo in
+                unlockCalls.append((planToken, signedTransactionInfo))
+                return Self.sampleUnlockedResponse(id: planToken.replacingOccurrences(of: "token-", with: ""))
+            }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
+        await viewModel.regenerateUnlockedPlan()
+
+        XCTAssertEqual(viewModel.currentPlan?.id, "plan_1")
+        XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_1"])
+        XCTAssertEqual(viewModel.errorMessage, "We could not generate a plan. Try again.")
+        XCTAssertTrue(viewModel.isUnlocked)
+    }
+
+    func testCurrentUnlockedSubscriberPlanShowsRefineAction() async {
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_one") }
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
 
         XCTAssertTrue(viewModel.shouldShowRefinePlanAction)
     }
 
     func testCurrentUnlockedPlanShowsNewDateAction() async {
-        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_one") }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
 
         XCTAssertTrue(viewModel.shouldShowPlanNewDateAction)
     }
 
     func testInactiveSubscriptionCannotRegenerateUnlockedPlan() async {
         var count = 0
-        let viewModel = PlanViewModel(generate: { _ in
-            count += 1
-            return Self.samplePlan(id: "plan_\(count)")
-        })
+        let viewModel = PlanViewModel(
+            generate: { _ in
+                count += 1
+                return Self.samplePlan(id: "plan_\(count)")
+            },
+            unlock: { planToken, _ in
+                Self.sampleUnlockedResponse(id: planToken.replacingOccurrences(of: "token-", with: ""))
+            }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
-        viewModel.setSubscriptionActive(false)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
+        await viewModel.setSubscriptionActive(false)
         await viewModel.regenerateUnlockedPlan()
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_1")
@@ -234,6 +391,7 @@ final class PlanViewModelTests: XCTestCase {
         let store = makeUnlockedPlanStore()
         let viewModel = PlanViewModel(
             generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_one") },
             unlockedPlanStore: store
         )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
@@ -241,7 +399,7 @@ final class PlanViewModelTests: XCTestCase {
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
 
         XCTAssertEqual(store.load()?.plan.id, "plan_one")
         XCTAssertEqual(viewModel.savedUnlockedPlan?.plan.id, "plan_one")
@@ -260,6 +418,16 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.hasSavedUnlockedPlan)
     }
 
+    func testUnlockedPlanStoreIgnoresPreviewOnlyPlan() {
+        let store = makeUnlockedPlanStore()
+        var previewOnlyPlan = Self.samplePlan(id: "preview_plan")
+        previewOnlyPlan.lockedPlan = nil
+
+        store.save(plan: previewOnlyPlan)
+
+        XCTAssertNil(store.load())
+    }
+
     func testReturnToSavedUnlockedPlanShowsLatestPlan() {
         let store = makeUnlockedPlanStore()
         store.save(plan: Self.samplePlan(id: "saved_plan"))
@@ -271,11 +439,11 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isUnlocked)
     }
 
-    func testRestoredSavedPlanDoesNotShowRefineAction() {
+    func testRestoredSavedPlanDoesNotShowRefineAction() async {
         let store = makeUnlockedPlanStore()
         store.save(plan: Self.samplePlan(id: "saved_plan"))
         let viewModel = PlanViewModel(unlockedPlanStore: store)
-        viewModel.setSubscriptionActive(true)
+        await viewModel.setSubscriptionActive(true)
 
         viewModel.returnToSavedUnlockedPlan()
 
@@ -297,6 +465,7 @@ final class PlanViewModelTests: XCTestCase {
         let store = makeUnlockedPlanStore()
         let viewModel = PlanViewModel(
             generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_one") },
             unlockedPlanStore: store
         )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
@@ -304,7 +473,7 @@ final class PlanViewModelTests: XCTestCase {
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.completeSubscriptionPurchase(success: true)
+        await viewModel.completeSubscriptionPurchase(success: true, signedTransactionInfo: "signed-proof")
         viewModel.startNewDate()
 
         XCTAssertNil(viewModel.currentPlan)
@@ -314,14 +483,17 @@ final class PlanViewModelTests: XCTestCase {
     }
 
     func testStartNewDateClearsPlanButKeepsPreferences() async {
-        let viewModel = PlanViewModel(generate: { _ in Self.samplePlan(id: "plan_one") })
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            unlock: { _, _ in Self.sampleUnlockedResponse(id: "plan_one") }
+        )
         viewModel.locationLabel = "Williamsburg, Brooklyn"
         viewModel.planningAreaCountryCode = "US"
         viewModel.partnerLikes = "bookstores and matcha"
         viewModel.hasAcceptedAIDisclosure = true
 
         await viewModel.generatePreview()
-        viewModel.unlockCurrentPlan()
+        await viewModel.unlockCurrentPlan(signedTransactionInfo: "signed-proof")
         viewModel.startNewDate()
 
         XCTAssertNil(viewModel.currentPlan)
@@ -342,6 +514,7 @@ final class PlanViewModelTests: XCTestCase {
     private static func samplePlan(id: String) -> DatePlanResponse {
         DatePlanResponse(
             id: id,
+            planToken: "token-\(id)",
             preview: PlanPreview(
                 title: "A cozy 2-hour plan near Williamsburg",
                 summaryBadges: ["$$", "2 hours", "No bars"],
@@ -369,6 +542,20 @@ final class PlanViewModelTests: XCTestCase {
                     )
                 ]
             ),
+            lockedPlan: LockedPlan(
+                totalEstimatedCost: "$60-$90",
+                stops: [
+                    LockedStop(order: 1, venueName: "A", address: "1 St", appleMapsQuery: "A 1 St", durationMinutes: 35, reason: "A thoughtful first stop.", estimatedCost: "$20-$30"),
+                    LockedStop(order: 2, venueName: "B", address: "2 St", appleMapsQuery: "B 2 St", durationMinutes: 50, reason: "A thoughtful second stop.", estimatedCost: "$10-$25"),
+                    LockedStop(order: 3, venueName: "C", address: "3 St", appleMapsQuery: "C 3 St", durationMinutes: 35, reason: "A thoughtful final stop.", estimatedCost: "$30-$35")
+                ]
+            )
+        )
+    }
+
+    private static func sampleUnlockedResponse(id: String) -> UnlockedPlanResponse {
+        UnlockedPlanResponse(
+            id: id,
             lockedPlan: LockedPlan(
                 totalEstimatedCost: "$60-$90",
                 stops: [

@@ -39,8 +39,13 @@ struct ContentView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(purchaseService: purchaseService) { _ in
             } onPurchased: { success in
-                viewModel.completeSubscriptionPurchase(success: success)
-                showingPaywall = false
+                Task {
+                    await viewModel.completeSubscriptionPurchase(
+                        success: success,
+                        signedTransactionInfo: purchaseService.activeSignedTransactionInfo
+                    )
+                    showingPaywall = false
+                }
             }
         }
         .task {
@@ -52,10 +57,26 @@ struct ContentView: View {
                 isShowingOpeningLoading = false
             }
             await products
-            viewModel.setSubscriptionActive(purchaseService.hasActiveSubscription)
+            await viewModel.setSubscriptionActive(
+                purchaseService.hasActiveSubscription,
+                signedTransactionInfo: purchaseService.activeSignedTransactionInfo
+            )
         }
         .onChange(of: purchaseService.hasActiveSubscription) { _, isActive in
-            viewModel.setSubscriptionActive(isActive)
+            Task {
+                await viewModel.setSubscriptionActive(
+                    isActive,
+                    signedTransactionInfo: purchaseService.activeSignedTransactionInfo
+                )
+            }
+        }
+        .onChange(of: purchaseService.activeSignedTransactionInfo) { _, signedTransactionInfo in
+            Task {
+                await viewModel.setSubscriptionActive(
+                    purchaseService.hasActiveSubscription,
+                    signedTransactionInfo: signedTransactionInfo
+                )
+            }
         }
     }
 }
