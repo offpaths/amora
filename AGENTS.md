@@ -16,3 +16,7 @@
 - Current event discovery, Google Places, saved profiles, and accounts are out of scope for the MVP.
 - Intake defaults should allow drinking; users opt into the no-drinking constraint when needed.
 - The app saves the latest fully unlocked plan on-device for convenience; this does not promise recovery after app deletion or device changes.
+- Backend generation requests use Durable Object rate limiting to protect OpenAI spend across Worker isolates and restarts.
+- The Worker must reject oversized generation requests before parsing JSON, and must not log request bodies, prompts, OpenAI responses, or generated plans.
+- `OPENAI_API_KEY` must be configured with `wrangler secret put OPENAI_API_KEY` and never committed in source or Wrangler config.
+- Paid plan unlocks use only an opaque `planToken` and Apple's signed StoreKit transaction proof; purchaser profile fields must not be sent to the backend.
