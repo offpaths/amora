@@ -1,15 +1,26 @@
+import { verifyActiveSubscriptionProof } from "./app-store";
 import { generateDatePlan, type Env } from "./openai";
-import { GeneratePlanRequestSchema } from "./schema";
+import { createPlanToken, loadLockedPlan, storeLockedPlan } from "./plan-store";
+import { GeneratePlanRequestSchema, UnlockPlanRequestSchema } from "./schema";
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
-const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+const MAX_REQUEST_BYTES = 16 * 1024;
+
+type RateLimitBucket = {
+  count: number;
+  resetAt: number;
+};
+
+export interface WorkerEnv extends Env {
+  RATE_LIMITER: DurableObjectNamespace;
+}
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname !== "/generate-plan") {
+    if (!isKnownRoute(url.pathname)) {
       return json({ error: "not_found" }, 404);
     }
 
@@ -24,47 +35,125 @@ export default {
       return json({ error: "not_found" }, 404);
     }
 
-    if (isRateLimited(request)) {
+    if (isRequestTooLarge(request)) {
+      return json({ error: "request_too_large" }, 413);
+    }
+
+    if (await isRateLimited(request, env)) {
       return json({ error: "rate_limited", retryable: true }, 429);
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return json({ error: "invalid_json" }, 400);
+    if (url.pathname === "/unlock-plan") {
+      return handleUnlockPlan(request, env);
     }
 
-    const parsed = GeneratePlanRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      return json({ error: "invalid_request" }, 400);
-    }
-
-    try {
-      const plan = await generateDatePlan(parsed.data, env);
-      return json(plan, 200);
-    } catch {
-      return json({ error: "generation_failed", retryable: true }, 502);
-    }
+    return handleGeneratePlan(request, env);
   }
 };
 
-function isRateLimited(request: Request): boolean {
-  const now = Date.now();
+async function handleGeneratePlan(request: Request, env: WorkerEnv): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await readJsonBody(request);
+  } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    return json({ error: "invalid_json" }, 400);
+  }
+
+  const parsed = GeneratePlanRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return json({ error: "invalid_request" }, 400);
+  }
+
+  try {
+    const plan = await generateDatePlan(parsed.data, env);
+    const planToken = createPlanToken();
+    await storeLockedPlan(env.PLANS, planToken, plan);
+    return json({ id: plan.id, planToken, preview: plan.preview }, 200);
+  } catch {
+    return json({ error: "generation_failed", retryable: true }, 502);
+  }
+}
+
+async function handleUnlockPlan(request: Request, env: WorkerEnv): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await readJsonBody(request);
+  } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return json({ error: "request_too_large" }, 413);
+    }
+    return json({ error: "invalid_json" }, 400);
+  }
+
+  const parsed = UnlockPlanRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return json({ error: "invalid_request" }, 400);
+  }
+
+  let hasActiveSubscription: boolean;
+  try {
+    hasActiveSubscription = await verifyActiveSubscriptionProof(parsed.data.signedTransactionInfo, env);
+  } catch {
+    return json({ error: "subscription_verification_failed", retryable: true }, 502);
+  }
+
+  if (!hasActiveSubscription) {
+    return json({ error: "subscription_required" }, 403);
+  }
+
+  const plan = await loadLockedPlan(env.PLANS, parsed.data.planToken);
+  if (!plan) {
+    return json({ error: "plan_not_found" }, 404);
+  }
+
+  return json(plan, 200);
+}
+
+function isKnownRoute(pathname: string): boolean {
+  return pathname === "/generate-plan" || pathname === "/unlock-plan";
+}
+
+class RequestTooLargeError extends Error {}
+
+async function readJsonBody(request: Request): Promise<unknown> {
+  const text = await request.text();
+  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) {
+    throw new RequestTooLargeError();
+  }
+
+  return JSON.parse(text);
+}
+
+export class RateLimiter {
+  constructor(private readonly state: DurableObjectState) {}
+
+  async fetch(): Promise<Response> {
+    const now = Date.now();
+    const bucket = await this.state.storage.get<RateLimitBucket>("bucket");
+
+    if (!bucket || bucket.resetAt <= now) {
+      await this.state.storage.put("bucket", { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+      return new Response(null, { status: 204 });
+    }
+
+    if (bucket.count >= RATE_LIMIT_MAX_REQUESTS) {
+      return new Response(null, { status: 429 });
+    }
+
+    await this.state.storage.put("bucket", { count: bucket.count + 1, resetAt: bucket.resetAt });
+    return new Response(null, { status: 204 });
+  }
+}
+
+async function isRateLimited(request: Request, env: WorkerEnv): Promise<boolean> {
   const clientKey = getClientKey(request);
-  const bucket = rateLimitBuckets.get(clientKey);
-
-  if (!bucket || bucket.resetAt <= now) {
-    rateLimitBuckets.set(clientKey, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  if (bucket.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return true;
-  }
-
-  bucket.count += 1;
-  return false;
+  const id = env.RATE_LIMITER.idFromName(clientKey);
+  const stub = env.RATE_LIMITER.get(id);
+  const response = await stub.fetch("https://rate-limiter/check", { method: "POST" });
+  return response.status === 429;
 }
 
 function getClientKey(request: Request): string {
@@ -75,6 +164,16 @@ function getClientKey(request: Request): string {
 
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwardedFor || "unknown";
+}
+
+function isRequestTooLarge(request: Request): boolean {
+  const contentLength = request.headers.get("content-length");
+  if (!contentLength) {
+    return false;
+  }
+
+  const parsedLength = Number(contentLength);
+  return Number.isFinite(parsedLength) && parsedLength > MAX_REQUEST_BYTES;
 }
 
 function json(body: unknown, status: number): Response {

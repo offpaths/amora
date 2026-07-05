@@ -8,6 +8,13 @@ import {
 
 export interface Env {
   OPENAI_API_KEY: string;
+  PLANS: {
+    put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+    get(key: string): Promise<string | null>;
+  };
+  APP_STORE_BUNDLE_ID?: string;
+  APP_STORE_ENVIRONMENT?: string;
+  APP_STORE_APP_APPLE_ID?: string;
 }
 
 export async function generateDatePlan(input: GeneratePlanRequest, env: Env): Promise<DatePlanResponse> {

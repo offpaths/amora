@@ -1,6 +1,24 @@
 name = "amora-api"
 main = "src/index.ts"
 compatibility_date = "2026-06-22"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_STORE_BUNDLE_ID = "com.planwithamora.Amora"
+APP_STORE_ENVIRONMENT = "Sandbox"
+
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]
+
+[[kv_namespaces]]
+binding = "PLANS"
+id = "010e036915b54d59bcec89d224b5eab4"
+preview_id = "03bba01fb84c487395fb91c69b60ccee"
 
 [[routes]]
 pattern = "api.planwithamora.com"

@@ -20,6 +20,7 @@ Key decisions:
 - Gate exact venue details behind a StoreKit paywall.
 - Make Amora Plus the paywall action for unlocking exact plan details.
 - Show free anonymized previews that can regenerate before purchase.
+- Treat the backend as the authority for revealing locked plan details: the app sends only the generated `planToken` and Apple signed transaction proof to unlock exact content.
 - Use a schema-validated tool-call recovery pattern for backend plan generation.
 - Use a two-step intake: first ask "What would make her feel seen?" with planning area, then collect vibe, budget, duration, and no-drinking constraints.
 - Use one personal-anchor text field that accepts either a written summary or pasted chat/note context; screenshot and photo analysis are future extension points, not part of the current build.

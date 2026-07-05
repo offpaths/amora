@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildPrompt, buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop } from "../src/openai";
+import { buildPrompt, buildRecoveryPrompt, generateDatePlan, parsePlanCandidate, runRecoveryLoop, type Env } from "../src/openai";
 import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
@@ -96,6 +96,16 @@ const rawOpenAIResponse = {
   ]
 };
 
+function createEnv(openAIApiKey = "test-key"): Env {
+  return {
+    OPENAI_API_KEY: openAIApiKey,
+    PLANS: {
+      put: vi.fn(async () => undefined),
+      get: vi.fn(async () => null)
+    }
+  };
+}
+
 describe("generateDatePlan", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -109,7 +119,7 @@ describe("generateDatePlan", () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(jsonResponse(rawOpenAIResponse));
 
-    const plan = await generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" });
+    const plan = await generateDatePlan(validRequest, createEnv());
 
     expect(plan).toEqual(validPlan);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -194,7 +204,7 @@ describe("generateDatePlan", () => {
     );
 
     await expect(
-      generateDatePlan({ ...validRequest, countryCode: "GB" }, { OPENAI_API_KEY: "test-key" })
+      generateDatePlan({ ...validRequest, countryCode: "GB" }, createEnv())
     ).rejects.toThrow("invalid_plan_currency");
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
@@ -215,7 +225,7 @@ describe("generateDatePlan", () => {
       })
     );
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+    await expect(generateDatePlan(validRequest, createEnv())).resolves.toEqual(validPlan);
   });
 
   it("uses valid raw output when top-level output_text is invalid", async () => {
@@ -234,7 +244,7 @@ describe("generateDatePlan", () => {
       })
     );
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+    await expect(generateDatePlan(validRequest, createEnv())).resolves.toEqual(validPlan);
   });
 
   it("skips schema-invalid JSON candidates when a later candidate is valid", async () => {
@@ -262,7 +272,7 @@ describe("generateDatePlan", () => {
       })
     );
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+    await expect(generateDatePlan(validRequest, createEnv())).resolves.toEqual(validPlan);
   });
 
   it("prefers raw output_text candidates across all output items", async () => {
@@ -286,21 +296,21 @@ describe("generateDatePlan", () => {
       })
     );
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(alternateValidPlan);
+    await expect(generateDatePlan(validRequest, createEnv())).resolves.toEqual(alternateValidPlan);
   });
 
   it("keeps output_text fallback compatibility", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(jsonResponse({ output_text: JSON.stringify(validPlan) }));
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+    await expect(generateDatePlan(validRequest, createEnv())).resolves.toEqual(validPlan);
   });
 
   it("rejects non-OK OpenAI responses", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: "nope" }, 500));
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).rejects.toThrow(
+    await expect(generateDatePlan(validRequest, createEnv())).rejects.toThrow(
       "OpenAI request failed with 500"
     );
   });
@@ -308,7 +318,7 @@ describe("generateDatePlan", () => {
   it("rejects missing API keys before calling fetch", async () => {
     const fetchMock = vi.mocked(fetch);
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "" })).rejects.toThrow(
+    await expect(generateDatePlan(validRequest, createEnv(""))).rejects.toThrow(
       "OPENAI_API_KEY is not configured"
     );
     expect(fetchMock).not.toHaveBeenCalled();
@@ -338,7 +348,7 @@ describe("generateDatePlan", () => {
       }))
     );
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).rejects.toThrow();
+    await expect(generateDatePlan(validRequest, createEnv())).rejects.toThrow();
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
@@ -368,7 +378,7 @@ describe("generateDatePlan", () => {
       )
       .mockResolvedValueOnce(jsonResponse(rawOpenAIResponse));
 
-    await expect(generateDatePlan(validRequest, { OPENAI_API_KEY: "test-key" })).resolves.toEqual(validPlan);
+    await expect(generateDatePlan(validRequest, createEnv())).resolves.toEqual(validPlan);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const secondBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));

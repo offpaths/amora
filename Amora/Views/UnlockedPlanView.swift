@@ -6,7 +6,7 @@ struct UnlockedPlanView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        if let plan = viewModel.currentPlan {
+        if let plan = viewModel.currentPlan, let lockedPlan = plan.lockedPlan {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     if viewModel.isShowingSavedUnlockedPlan {
@@ -21,10 +21,10 @@ struct UnlockedPlanView: View {
                     Text(plan.preview.title)
                         .font(.system(.largeTitle, design: .serif, weight: .bold))
                         .foregroundStyle(AmoraTheme.ink)
-                    PillLabel(text: "Estimated total \(plan.lockedPlan.totalEstimatedCost)", tint: AmoraTheme.olive)
+                    PillLabel(text: "Estimated total \(lockedPlan.totalEstimatedCost)", tint: AmoraTheme.olive)
 
                     VStack(spacing: 12) {
-                        ForEach(plan.lockedPlan.stops) { stop in
+                        ForEach(lockedPlan.stops) { stop in
                             SurfaceCard {
                                 VStack(alignment: .leading, spacing: 14) {
                                     StopIllustrationPanel(systemImage: illustrationSystemName(for: stop))

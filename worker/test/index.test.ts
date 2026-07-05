@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
+import { verifyActiveSubscriptionProof } from "../src/app-store";
 import { generateDatePlan } from "../src/openai";
-import type { DatePlanResponse, GeneratePlanRequest } from "../src/schema";
+import type { WorkerEnv } from "../src/index";
+import type { DatePlanResponse, GeneratePlanPreviewResponse, GeneratePlanRequest, UnlockPlanResponse } from "../src/schema";
 
 const validRequest: GeneratePlanRequest = {
   locationLabel: "Williamsburg, Brooklyn",
@@ -81,28 +83,95 @@ vi.mock("../src/openai", () => ({
   generateDatePlan: vi.fn(async () => validPlan)
 }));
 
+vi.mock("../src/app-store", () => ({
+  verifyActiveSubscriptionProof: vi.fn(async () => true)
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
+function createEnv(): WorkerEnv {
+  const planStore = new Map<string, string>();
+
+  return {
+    OPENAI_API_KEY: "test-key",
+    PLANS: {
+      put: vi.fn(async (key: string, value: string) => {
+        planStore.set(key, value);
+      }),
+      get: vi.fn(async (key: string) => planStore.get(key) ?? null)
+    },
+    RATE_LIMITER: new TestRateLimiterNamespace() as unknown as DurableObjectNamespace
+  };
+}
+
+class TestRateLimiterNamespace {
+  private readonly buckets = new Map<string, { count: number; resetAt: number }>();
+
+  idFromName(name: string): DurableObjectId {
+    return { toString: () => name } as DurableObjectId;
+  }
+
+  get(id: DurableObjectId): DurableObjectStub {
+    return {
+      fetch: async () => {
+        const key = id.toString();
+        const now = Date.now();
+        const bucket = this.buckets.get(key);
+
+        if (!bucket || bucket.resetAt <= now) {
+          this.buckets.set(key, { count: 1, resetAt: now + 10 * 60 * 1000 });
+          return new Response(null, { status: 204 });
+        }
+
+        if (bucket.count >= 10) {
+          return new Response(null, { status: 429 });
+        }
+
+        bucket.count += 1;
+        return new Response(null, { status: 204 });
+      }
+    } as unknown as DurableObjectStub;
+  }
+}
+
 describe("POST /generate-plan", () => {
   it("returns a generated plan for a valid request", async () => {
+    const env = createEnv();
     const response = await worker.fetch(
       new Request("http://localhost/generate-plan", {
         method: "POST",
         body: JSON.stringify(validRequest),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      env
     );
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(validPlan);
-    expect(generateDatePlan).toHaveBeenCalledWith(validRequest, { OPENAI_API_KEY: "test-key" });
+    const body = await response.json() as GeneratePlanPreviewResponse & { lockedPlan?: unknown };
+    expect(body).toMatchObject({
+      id: validPlan.id,
+      preview: validPlan.preview
+    });
+    expect(Object.keys(body).sort()).toEqual(["id", "planToken", "preview"]);
+    expect(body.planToken).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.lockedPlan).toBeUndefined();
+    expect(env.PLANS.put).toHaveBeenCalledOnce();
+    const storedPayload = JSON.parse(vi.mocked(env.PLANS.put).mock.calls[0][1]);
+    expect(storedPayload).toEqual({
+      id: validPlan.id,
+      lockedPlan: validPlan.lockedPlan
+    });
+    expect(storedPayload.preview).toBeUndefined();
+    expect(storedPayload.partnerLikes).toBeUndefined();
+    expect(storedPayload.locationLabel).toBeUndefined();
+    expect(generateDatePlan).toHaveBeenCalledWith(validRequest, env);
     expectCorsHeaders(response);
   });
 
   it("allows requests up to the per-client rate limit", async () => {
+    const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
       const response = await worker.fetch(
         new Request("http://localhost/generate-plan", {
@@ -113,7 +182,7 @@ describe("POST /generate-plan", () => {
             "cf-connecting-ip": "203.0.113.10"
           }
         }),
-        { OPENAI_API_KEY: "test-key" }
+        env
       );
 
       expect(response.status).toBe(200);
@@ -123,6 +192,7 @@ describe("POST /generate-plan", () => {
   });
 
   it("returns a retryable rate limit error after too many requests from one client", async () => {
+    const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
       await worker.fetch(
         new Request("http://localhost/generate-plan", {
@@ -133,7 +203,7 @@ describe("POST /generate-plan", () => {
             "cf-connecting-ip": "203.0.113.20"
           }
         }),
-        { OPENAI_API_KEY: "test-key" }
+        env
       );
     }
 
@@ -146,7 +216,7 @@ describe("POST /generate-plan", () => {
           "cf-connecting-ip": "203.0.113.20"
         }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      env
     );
 
     expect(response.status).toBe(429);
@@ -156,6 +226,7 @@ describe("POST /generate-plan", () => {
   });
 
   it("tracks rate limits separately by client IP", async () => {
+    const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
       await worker.fetch(
         new Request("http://localhost/generate-plan", {
@@ -166,7 +237,7 @@ describe("POST /generate-plan", () => {
             "x-forwarded-for": "203.0.113.30, 198.51.100.1"
           }
         }),
-        { OPENAI_API_KEY: "test-key" }
+        env
       );
     }
 
@@ -179,7 +250,7 @@ describe("POST /generate-plan", () => {
           "x-forwarded-for": "203.0.113.30, 198.51.100.1"
         }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      env
     );
     const allowedResponse = await worker.fetch(
       new Request("http://localhost/generate-plan", {
@@ -190,7 +261,7 @@ describe("POST /generate-plan", () => {
           "x-forwarded-for": "203.0.113.31, 198.51.100.1"
         }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      env
     );
 
     expect(blockedResponse.status).toBe(429);
@@ -204,7 +275,7 @@ describe("POST /generate-plan", () => {
         body: JSON.stringify({ ...validRequest, durationMinutes: 95 }),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(400);
@@ -218,11 +289,44 @@ describe("POST /generate-plan", () => {
         body: "{",
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "invalid_json" });
+  });
+
+  it("rejects oversized requests before parsing JSON", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: "{",
+        headers: {
+          "content-type": "application/json",
+          "content-length": "16385"
+        }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ error: "request_too_large" });
+    expect(generateDatePlan).not.toHaveBeenCalled();
+  });
+
+  it("rejects oversized requests when content-length is missing", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: "x".repeat(16 * 1024 + 1),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ error: "request_too_large" });
+    expect(generateDatePlan).not.toHaveBeenCalled();
   });
 
   it("returns a retryable error when generation fails", async () => {
@@ -234,7 +338,7 @@ describe("POST /generate-plan", () => {
         body: JSON.stringify(validRequest),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(502);
@@ -246,11 +350,137 @@ describe("POST /generate-plan", () => {
       new Request("http://localhost/generate-plan", {
         method: "GET"
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+});
+
+describe("POST /unlock-plan", () => {
+  it("returns the locked plan for an active subscription and stored plan token", async () => {
+    const env = createEnv();
+    const previewResponse = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(validRequest),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+    const previewBody = await previewResponse.json() as GeneratePlanPreviewResponse;
+
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: previewBody.planToken,
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      id: validPlan.id,
+      lockedPlan: validPlan.lockedPlan
+    } satisfies UnlockPlanResponse);
+    expect(verifyActiveSubscriptionProof).toHaveBeenCalledWith("apple.signed.transaction.jws", env);
+    expectCorsHeaders(response);
+  });
+
+  it("returns subscription required when the subscription proof is inactive", async () => {
+    vi.mocked(verifyActiveSubscriptionProof).mockResolvedValueOnce(false);
+
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "a".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "subscription_required" });
+  });
+
+  it("returns not found when the plan token is missing or stale", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "b".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "plan_not_found" });
+  });
+
+  it("rejects purchaser profile fields before subscription verification", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "c".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws",
+          email: "buyer@example.com"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_request" });
+    expect(verifyActiveSubscriptionProof).not.toHaveBeenCalled();
+  });
+
+  it("rejects requests missing a plan token before subscription verification", async () => {
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_request" });
+    expect(verifyActiveSubscriptionProof).not.toHaveBeenCalled();
+  });
+
+  it("returns a retryable verification error when subscription verification throws", async () => {
+    vi.mocked(verifyActiveSubscriptionProof).mockRejectedValueOnce(new Error("unexpected verifier error"));
+
+    const response = await worker.fetch(
+      new Request("http://localhost/unlock-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          planToken: "d".repeat(64),
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      createEnv()
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: "subscription_verification_failed", retryable: true });
   });
 });
 
@@ -268,7 +498,7 @@ describe("POST /telemetry", () => {
         }),
         headers: { "content-type": "application/json" }
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(404);
@@ -278,17 +508,18 @@ describe("POST /telemetry", () => {
 
 describe("OPTIONS /generate-plan", () => {
   it("returns 204 for known routes", async () => {
-    const response = await worker.fetch(
-      new Request("http://localhost/generate-plan", {
-        method: "OPTIONS"
-      }),
-      { OPENAI_API_KEY: "test-key" }
-    );
+    for (const path of ["/generate-plan", "/unlock-plan"]) {
+      const response = await worker.fetch(
+        new Request(`http://localhost${path}`, {
+          method: "OPTIONS"
+        }),
+        createEnv()
+      );
 
-    expect(response.status).toBe(204);
-    await expect(response.text()).resolves.toBe("");
-    expectCorsHeaders(response);
-
+      expect(response.status).toBe(204);
+      await expect(response.text()).resolves.toBe("");
+      expectCorsHeaders(response);
+    }
   });
 
   it("returns not found for other routes", async () => {
@@ -296,7 +527,7 @@ describe("OPTIONS /generate-plan", () => {
       new Request("http://localhost/anything", {
         method: "OPTIONS"
       }),
-      { OPENAI_API_KEY: "test-key" }
+      createEnv()
     );
 
     expect(response.status).toBe(404);

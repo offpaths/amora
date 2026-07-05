@@ -6,6 +6,7 @@ import StoreKit
 final class PurchaseService: ObservableObject {
     @Published private(set) var plusMonthlyProduct: Product?
     @Published private(set) var hasActiveSubscription = false
+    @Published private(set) var activeSignedTransactionInfo: String?
     @Published private(set) var isLoadingProducts = false
     @Published private(set) var didLoadProducts = false
     @Published private(set) var isRestoringPurchases = false
@@ -37,13 +38,14 @@ final class PurchaseService: ObservableObject {
         guard let plusMonthlyProduct else { return false }
         let success = await purchase(plusMonthlyProduct)
         if success {
-            hasActiveSubscription = true
+            await refreshSubscriptionStatus()
         }
         return success
     }
 
     func refreshSubscriptionStatus() async {
         var isActive = false
+        var activeSignedTransactionInfo: String?
 
         for await entitlement in Transaction.currentEntitlements {
             guard case .verified(let transaction) = entitlement else {
@@ -52,11 +54,13 @@ final class PurchaseService: ObservableObject {
 
             if transaction.productID == AppConfig.plusMonthlyProductID {
                 isActive = true
+                activeSignedTransactionInfo = entitlement.jwsRepresentation
                 break
             }
         }
 
         hasActiveSubscription = isActive
+        self.activeSignedTransactionInfo = activeSignedTransactionInfo
     }
 
     func restorePurchases() async {

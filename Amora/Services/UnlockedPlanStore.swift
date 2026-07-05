@@ -28,6 +28,9 @@ struct UnlockedPlanStore {
     }
 
     func save(plan: DatePlanResponse, savedAt: Date = Date()) {
+        guard plan.lockedPlan != nil else {
+            return
+        }
         let savedPlan = SavedUnlockedPlan(plan: plan, savedAt: savedAt)
         guard let data = try? encoder.encode(savedPlan) else {
             return

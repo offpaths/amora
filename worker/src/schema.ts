@@ -124,6 +124,22 @@ export const DatePlanResponseSchema = z.object({
   })
 });
 
+export const GeneratePlanPreviewResponseSchema = DatePlanResponseSchema
+  .pick({ id: true, preview: true })
+  .extend({
+    planToken: z.string().trim().min(32).max(128)
+  })
+  .strict();
+
+export const UnlockPlanRequestSchema = z.object({
+  planToken: z.string().trim().min(32).max(128),
+  signedTransactionInfo: z.string().trim().min(20).max(10_000)
+}).strict();
+
+export const UnlockPlanResponseSchema = DatePlanResponseSchema
+  .pick({ id: true, lockedPlan: true })
+  .strict();
+
 export function validatePlanCostsForCurrency(plan: DatePlanResponse, currencyCode: string): void {
   const expectedCurrency = currencyCode.trim().toUpperCase();
   const stops = plan.lockedPlan.stops;
@@ -157,3 +173,6 @@ function isValidPaidCostForCurrency(value: string, currencyCode: string): boolea
 
 export type GeneratePlanRequest = z.infer<typeof GeneratePlanRequestSchema>;
 export type DatePlanResponse = z.infer<typeof DatePlanResponseSchema>;
+export type GeneratePlanPreviewResponse = z.infer<typeof GeneratePlanPreviewResponseSchema>;
+export type UnlockPlanRequest = z.infer<typeof UnlockPlanRequestSchema>;
+export type UnlockPlanResponse = z.infer<typeof UnlockPlanResponseSchema>;
