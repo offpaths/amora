@@ -1,20 +1,24 @@
 import { Buffer } from "node:buffer";
-import {
-  Environment,
-  SignedDataVerifier,
-  VerificationException,
-  VerificationStatus,
-  type JWSTransactionDecodedPayload
-} from "@apple/app-store-server-library";
 import type { Env } from "./openai";
 
 const PLUS_PRODUCT_ID = "amora_plus_monthly";
+const RETRYABLE_VERIFICATION_FAILURE = 2;
 const APPLE_ROOT_CERTIFICATE_URLS = [
   "https://www.apple.com/certificateauthority/AppleRootCA-G3.cer",
   "https://www.apple.com/certificateauthority/AppleRootCA-G4.cer"
 ];
 
-type TransactionVerifier = Pick<SignedDataVerifier, "verifyAndDecodeTransaction">;
+interface TransactionPayload {
+  bundleId?: string;
+  productId?: string;
+  environment?: string;
+  expiresDate?: number | string;
+  revocationDate?: number | string;
+}
+
+interface TransactionVerifier {
+  verifyAndDecodeTransaction(signedTransactionInfo: string): Promise<TransactionPayload>;
+}
 
 let cachedRootCertificates: Buffer[] | undefined;
 const cachedVerifiers = new Map<string, TransactionVerifier>();
@@ -33,8 +37,8 @@ export async function verifyActiveSubscriptionProof(
     if (error instanceof AppStoreConfigError) {
       return false;
     }
-    if (error instanceof VerificationException) {
-      if (error.status === VerificationStatus.RETRYABLE_VERIFICATION_FAILURE) {
+    if (isAppleVerificationError(error)) {
+      if (error.status === RETRYABLE_VERIFICATION_FAILURE) {
         throw error;
       }
       return false;
@@ -43,12 +47,12 @@ export async function verifyActiveSubscriptionProof(
   }
 }
 
-export function isActiveAmoraPlusTransaction(payload: JWSTransactionDecodedPayload, env: Env): boolean {
+export function isActiveAmoraPlusTransaction(payload: TransactionPayload, env: Env): boolean {
   return isActiveAmoraPlusTransactionForConfig(payload, resolveAppStoreConfig(env));
 }
 
 function isActiveAmoraPlusTransactionForConfig(
-  payload: JWSTransactionDecodedPayload,
+  payload: TransactionPayload,
   config: AppStoreConfig
 ): boolean {
   if (payload.bundleId !== config.bundleId) {
@@ -74,6 +78,7 @@ async function createVerifier(config: AppStoreConfig): Promise<TransactionVerifi
     return cachedVerifier;
   }
 
+  const { Environment, SignedDataVerifier } = await import("@apple/app-store-server-library");
   const environment = config.environment === "Production" ? Environment.PRODUCTION : Environment.SANDBOX;
   const verifier = new SignedDataVerifier(
     await loadAppleRootCertificates(),
@@ -99,6 +104,13 @@ async function loadAppleRootCertificates(): Promise<Buffer[]> {
     return Buffer.from(await response.arrayBuffer());
   }));
   return cachedRootCertificates;
+}
+
+function isAppleVerificationError(error: unknown): error is { status: number } {
+  return typeof error === "object"
+    && error !== null
+    && "status" in error
+    && typeof (error as { status?: unknown }).status === "number";
 }
 
 class AppStoreConfigError extends Error {}
