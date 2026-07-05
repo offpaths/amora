@@ -20,3 +20,4 @@
 - The Worker must reject oversized generation requests before parsing JSON, and must not log request bodies, prompts, OpenAI responses, or generated plans.
 - `OPENAI_API_KEY` must be configured with `wrangler secret put OPENAI_API_KEY` and never committed in source or Wrangler config.
 - Paid plan unlocks use only an opaque `planToken` and Apple's signed StoreKit transaction proof; purchaser profile fields must not be sent to the backend.
+- MVP generation should bias toward activity-led date stops when supported by the planning area, vibe, budget, duration, and personal context; restaurants, bars, coffee shops, parks, and walks should not become the default shape of most plans.

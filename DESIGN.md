@@ -4,6 +4,7 @@
 
 The approved MVP design is recorded in `docs/superpowers/specs/2026-06-22-thoughtful-date-plan-mvp-design.md`.
 The approved premium reveal app-flow refinement is recorded in `docs/superpowers/specs/2026-06-25-premium-reveal-app-flow-design.md`.
+The approved activity-biased generation refinement is recorded in `docs/superpowers/specs/2026-07-05-activity-biased-generation-design.md`.
 
 Key decisions:
 
@@ -29,6 +30,7 @@ Key decisions:
 - Show generated date cost estimates in the common local currency of the planning area; do not ask users to pick estimate currency in the MVP.
 - Replace vague `$ / $$ / $$$` budget input with a local-currency stepped budget-for-two control; make clear Amora plans around the amount rather than trying to spend it all.
 - When a saved unlocked plan exists, the first intake step shows a compact previous-plan card that opens the latest unlocked plan saved on this device.
+- Date-plan generation should consider activity-led stops by default when they fit the area, vibe, budget, duration, and personal context; the personal-anchor field should bias the plan toward any mentioned activities before falling back to generic food, drink, park, or coffee stops.
 
 ## Visual System
 
