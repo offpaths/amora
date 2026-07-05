@@ -11,6 +11,8 @@ Amora collects the information needed to create date-plan previews and unlocked 
 
 Amora sends your planning area, preferences, and personal context to our AI provider to generate your plan. Do not paste sensitive information you do not want processed for this purpose.
 
+Amora saves your AI disclosure acceptance and latest fully unlocked plan on your device for convenience.
+
 Amora does not sell personal information. Amora uses collected information to generate plans, provide purchases, operate support, and prevent abuse.
 
 Amora does not collect in-app analytics or telemetry. App performance, purchase, and subscription reporting come from App Store Connect.
