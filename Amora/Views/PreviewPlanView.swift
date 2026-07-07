@@ -19,6 +19,12 @@ struct PreviewPlanView: View {
                         .font(.subheadline)
                         .foregroundStyle(AmoraTheme.muted)
 
+                    if let errorMessage = viewModel.errorMessage {
+                        Text(errorMessage)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AmoraTheme.oxblood)
+                    }
+
                     VStack(spacing: 12) {
                         ForEach(plan.preview.stops) { stop in
                             SurfaceCard {

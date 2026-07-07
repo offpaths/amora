@@ -1,5 +1,41 @@
 import SwiftUI
 
+enum ContentRoute: Equatable {
+    case openingLoading
+    case aiConsent
+    case loadingPlan
+    case input
+    case unlockedPlan
+    case previewPlan
+
+    static func resolve(
+        isShowingOpeningLoading: Bool,
+        hasAcceptedAIDisclosure: Bool,
+        isLoading: Bool,
+        hasCurrentPlan: Bool,
+        isEditingPreferences: Bool,
+        isUnlocked: Bool,
+        hasActiveSubscription: Bool
+    ) -> ContentRoute {
+        if isShowingOpeningLoading {
+            return .openingLoading
+        }
+        if !hasAcceptedAIDisclosure {
+            return .aiConsent
+        }
+        if isLoading {
+            return .loadingPlan
+        }
+        if !hasCurrentPlan || isEditingPreferences {
+            return .input
+        }
+        if isUnlocked {
+            return .unlockedPlan
+        }
+        return .previewPlan
+    }
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = PlanViewModel()
     @StateObject private var purchaseService = PurchaseService()
@@ -7,24 +43,35 @@ struct ContentView: View {
     @State private var isEditingPreferences = false
     @State private var isShowingOpeningLoading = true
     @State private var hasStartedOpeningTask = false
+    @State private var isCompletingPaywallPurchase = false
 
     var body: some View {
-        Group {
-            if isShowingOpeningLoading {
+        let route = ContentRoute.resolve(
+            isShowingOpeningLoading: isShowingOpeningLoading,
+            hasAcceptedAIDisclosure: viewModel.hasAcceptedAIDisclosure,
+            isLoading: viewModel.isLoading,
+            hasCurrentPlan: viewModel.currentPlan != nil,
+            isEditingPreferences: isEditingPreferences,
+            isUnlocked: viewModel.isUnlocked,
+            hasActiveSubscription: viewModel.hasActiveSubscription
+        )
+
+        return Group {
+            if route == .openingLoading {
                 OpeningLoadingView()
-            } else if !viewModel.hasAcceptedAIDisclosure {
+            } else if route == .aiConsent {
                 AIConsentView {
                     viewModel.acceptAIDisclosure()
                 }
-            } else if viewModel.isLoading {
+            } else if route == .loadingPlan {
                 LoadingPlanView()
-            } else if viewModel.currentPlan == nil || isEditingPreferences {
+            } else if route == .input {
                 InputView(viewModel: viewModel, initialStep: viewModel.currentPlan == nil ? 1 : 2) {
                     isEditingPreferences = false
                 } onReturnToExistingPlan: {
                     isEditingPreferences = false
                 }
-            } else if viewModel.isUnlocked {
+            } else if route == .unlockedPlan {
                 UnlockedPlanView(viewModel: viewModel) {
                     viewModel.startNewDate()
                 }
@@ -40,11 +87,16 @@ struct ContentView: View {
             PaywallView(purchaseService: purchaseService) { _ in
             } onPurchased: { success in
                 Task {
-                    await viewModel.completeSubscriptionPurchase(
+                    guard success else { return }
+                    isCompletingPaywallPurchase = true
+                    defer { isCompletingPaywallPurchase = false }
+                    let didUnlock = await viewModel.completeSubscriptionPurchase(
                         success: success,
                         signedTransactionInfo: purchaseService.activeSignedTransactionInfo
                     )
-                    showingPaywall = false
+                    if didUnlock {
+                        showingPaywall = false
+                    }
                 }
             }
         }
@@ -64,18 +116,26 @@ struct ContentView: View {
         }
         .onChange(of: purchaseService.hasActiveSubscription) { _, isActive in
             Task {
+                guard !isCompletingPaywallPurchase else { return }
                 await viewModel.setSubscriptionActive(
                     isActive,
                     signedTransactionInfo: purchaseService.activeSignedTransactionInfo
                 )
+                if viewModel.isUnlocked {
+                    showingPaywall = false
+                }
             }
         }
         .onChange(of: purchaseService.activeSignedTransactionInfo) { _, signedTransactionInfo in
             Task {
+                guard !isCompletingPaywallPurchase else { return }
                 await viewModel.setSubscriptionActive(
                     purchaseService.hasActiveSubscription,
                     signedTransactionInfo: signedTransactionInfo
                 )
+                if viewModel.isUnlocked {
+                    showingPaywall = false
+                }
             }
         }
     }

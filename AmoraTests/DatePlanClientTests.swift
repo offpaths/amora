@@ -32,6 +32,7 @@ final class DatePlanClientTests: XCTestCase {
             XCTAssertEqual(encoded.locationLabel, "Williamsburg, Brooklyn")
             XCTAssertEqual(encoded.countryCode, "US")
             XCTAssertEqual(encoded.budgetAmount, 100)
+            XCTAssertEqual(encoded.signedTransactionInfo, "apple.signed.transaction.jws")
             return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!, responseJSON)
         }
 
@@ -44,7 +45,8 @@ final class DatePlanClientTests: XCTestCase {
                 vibe: .cozy,
                 noDrinking: true,
                 durationMinutes: 120,
-                partnerLikes: "bookstores"
+                partnerLikes: "bookstores",
+                signedTransactionInfo: "apple.signed.transaction.jws"
             )
         )
 
@@ -110,7 +112,39 @@ final class DatePlanClientTests: XCTestCase {
             )
             XCTFail("Expected generationFailed")
         } catch let error as DatePlanClientError {
-            XCTAssertEqual(error, .generationFailed)
+            XCTAssertEqual(error, .generationFailed(statusCode: 502, body: #"{"error":"generation_failed","retryable":true}"#))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testGeneratePlanThrowsDecodingFailedWithResponseBody() async {
+        URLProtocolStub.requestHandler = { request in
+            let data = #"{"id":"plan_test_123","preview":{"title":"Incomplete"}}"#.data(using: .utf8)!
+            return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!, data)
+        }
+
+        let client = DatePlanClient(baseURL: URL(string: "https://example.com")!, session: .stubbed)
+
+        do {
+            _ = try await client.generatePlan(
+                GeneratePlanRequest(
+                    locationLabel: "Williamsburg, Brooklyn",
+                    countryCode: "US",
+                    budgetAmount: 100,
+                    vibe: .cozy,
+                    noDrinking: true,
+                    durationMinutes: 120,
+                    partnerLikes: ""
+                )
+            )
+            XCTFail("Expected decodingFailed")
+        } catch let error as DatePlanClientError {
+            guard case .decodingFailed(let details) = error else {
+                return XCTFail("Unexpected DatePlanClientError: \(error)")
+            }
+            XCTAssertTrue(details.contains("Decode error:"))
+            XCTAssertTrue(details.contains(#""id":"plan_test_123""#))
         } catch {
             XCTFail("Unexpected error: \(error)")
         }

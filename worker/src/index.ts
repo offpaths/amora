@@ -67,12 +67,31 @@ async function handleGeneratePlan(request: Request, env: WorkerEnv): Promise<Res
     return json({ error: "invalid_request" }, 400);
   }
 
+  let shouldReturnUnlockedPlan = false;
+  if (parsed.data.signedTransactionInfo) {
+    try {
+      shouldReturnUnlockedPlan = await verifyActiveSubscriptionProof(parsed.data.signedTransactionInfo, env);
+    } catch (error) {
+      console.error("subscription_verification_failed", sanitizeError(error));
+      return json({ error: "subscription_verification_failed", retryable: true }, 502);
+    }
+
+    if (!shouldReturnUnlockedPlan) {
+      return json({ error: "subscription_required" }, 403);
+    }
+  }
+
   try {
     const plan = await generateDatePlan(parsed.data, env);
+    if (shouldReturnUnlockedPlan) {
+      return json(plan, 200);
+    }
+
     const planToken = createPlanToken();
     await storeLockedPlan(env.PLANS, planToken, plan);
     return json({ id: plan.id, planToken, preview: plan.preview }, 200);
-  } catch {
+  } catch (error) {
+    console.error("generate_plan_failed", sanitizeError(error));
     return json({ error: "generation_failed", retryable: true }, 502);
   }
 }
@@ -96,7 +115,8 @@ async function handleUnlockPlan(request: Request, env: WorkerEnv): Promise<Respo
   let hasActiveSubscription: boolean;
   try {
     hasActiveSubscription = await verifyActiveSubscriptionProof(parsed.data.signedTransactionInfo, env);
-  } catch {
+  } catch (error) {
+    console.error("subscription_verification_failed", sanitizeError(error));
     return json({ error: "subscription_verification_failed", retryable: true }, 502);
   }
 
@@ -114,6 +134,46 @@ async function handleUnlockPlan(request: Request, env: WorkerEnv): Promise<Respo
 
 function isKnownRoute(pathname: string): boolean {
   return pathname === "/generate-plan" || pathname === "/unlock-plan";
+}
+
+function sanitizeError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const sanitized: Record<string, unknown> = {
+      name: error.name,
+      constructorName: error.constructor.name,
+      message: error.message
+    };
+    if (hasNumericStatus(error)) {
+      sanitized.status = error.status;
+      sanitized.statusName = verificationStatusName(error.status);
+    }
+    if (error.cause instanceof Error) {
+      sanitized.cause = {
+        name: error.cause.name,
+        constructorName: error.cause.constructor.name,
+        message: error.cause.message
+      };
+    }
+    return sanitized;
+  }
+  return { name: "UnknownError", message: "unknown" };
+}
+
+function hasNumericStatus(error: Error): error is Error & { status: number } {
+  return "status" in error && typeof (error as { status?: unknown }).status === "number";
+}
+
+function verificationStatusName(status: number): string {
+  return {
+    0: "OK",
+    1: "VERIFICATION_FAILURE",
+    2: "RETRYABLE_VERIFICATION_FAILURE",
+    3: "INVALID_APP_IDENTIFIER",
+    4: "INVALID_ENVIRONMENT",
+    5: "INVALID_CHAIN_LENGTH",
+    6: "INVALID_CERTIFICATE",
+    7: "FAILURE"
+  }[status] ?? "UNKNOWN";
 }
 
 class RequestTooLargeError extends Error {}

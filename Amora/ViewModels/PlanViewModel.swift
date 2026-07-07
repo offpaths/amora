@@ -95,31 +95,52 @@ final class PlanViewModel: ObservableObject {
             return
         }
 
+        if hasActiveSubscription && activeSignedTransactionInfo == nil {
+            errorMessage = "We could not verify your subscription. Try restoring your purchase."
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
 
         do {
             currentPlan = try await generate(makeRequest())
-            isUnlocked = false
+            isUnlocked = hasActiveSubscription && currentPlan?.lockedPlan != nil
             isShowingSavedUnlockedPlan = false
-            if hasActiveSubscription, let activeSignedTransactionInfo {
-                await unlockCurrentPlan(signedTransactionInfo: activeSignedTransactionInfo)
+            if isUnlocked, let currentPlan {
+                saveLatestUnlockedPlan(currentPlan)
+            }
+        } catch let error as DatePlanClientError {
+            if error.isSubscriptionRequiredGenerationFailure {
+                hasActiveSubscription = false
+                activeSignedTransactionInfo = nil
+                do {
+                    currentPlan = try await generate(makeRequest())
+                    isUnlocked = false
+                    isShowingSavedUnlockedPlan = false
+                    errorMessage = nil
+                } catch {
+                    errorMessage = "We could not generate a plan. Try again."
+                }
+            } else {
+                errorMessage = "We could not generate a plan. Try again."
             }
         } catch {
             errorMessage = "We could not generate a plan. Try again."
         }
     }
 
-    func unlockCurrentPlan(signedTransactionInfo: String?) async {
-        guard var currentPlan else { return }
+    @discardableResult
+    func unlockCurrentPlan(signedTransactionInfo: String?) async -> Bool {
+        guard var currentPlan else { return false }
         guard let planToken = currentPlan.planToken, !planToken.isEmpty else {
             errorMessage = "We could not unlock this plan. Create a fresh preview and try again."
-            return
+            return false
         }
         guard let signedTransactionInfo, !signedTransactionInfo.isEmpty else {
             errorMessage = "We could not verify your subscription. Try restoring your purchase."
-            return
+            return false
         }
 
         isLoading = true
@@ -135,17 +156,20 @@ final class PlanViewModel: ObservableObject {
             isShowingSavedUnlockedPlan = false
             activeSignedTransactionInfo = signedTransactionInfo
             saveLatestUnlockedPlan(currentPlan)
+            return true
         } catch {
             isUnlocked = false
             errorMessage = "We could not unlock this plan. Try restoring your purchase or try again."
+            return false
         }
     }
 
-    func completeSubscriptionPurchase(success: Bool, signedTransactionInfo: String?) async {
-        guard success else { return }
+    @discardableResult
+    func completeSubscriptionPurchase(success: Bool, signedTransactionInfo: String?) async -> Bool {
+        guard success else { return false }
         hasActiveSubscription = true
         activeSignedTransactionInfo = signedTransactionInfo
-        await unlockCurrentPlan(signedTransactionInfo: signedTransactionInfo)
+        return await unlockCurrentPlan(signedTransactionInfo: signedTransactionInfo)
     }
 
     func setSubscriptionActive(_ isActive: Bool, signedTransactionInfo: String? = nil) async {
@@ -210,12 +234,22 @@ final class PlanViewModel: ObservableObject {
             noDrinking: noDrinking,
             durationMinutes: durationMinutes,
             partnerLikes: partnerLikes,
-            regenerationAttempt: regenerationAttempt
+            regenerationAttempt: regenerationAttempt,
+            signedTransactionInfo: hasActiveSubscription ? activeSignedTransactionInfo : nil
         )
     }
 
     private func saveLatestUnlockedPlan(_ plan: DatePlanResponse) {
         unlockedPlanStore.save(plan: plan)
         savedUnlockedPlan = unlockedPlanStore.load()
+    }
+}
+
+private extension DatePlanClientError {
+    var isSubscriptionRequiredGenerationFailure: Bool {
+        if case .generationFailed(let statusCode, let body) = self {
+            return statusCode == 403 && body.contains("subscription_required")
+        }
+        return false
     }
 }

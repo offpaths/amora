@@ -76,7 +76,8 @@ export const GeneratePlanRequestSchema = z.object({
   noDrinking: z.boolean(),
   durationMinutes: DurationMinutesSchema,
   partnerLikes: z.string().trim().max(500).optional().default(""),
-  regenerationAttempt: z.number().int().min(0).max(20).optional().default(0)
+  regenerationAttempt: z.number().int().min(0).max(20).optional().default(0),
+  signedTransactionInfo: z.string().trim().min(20).max(10_000).optional()
 });
 
 export const PreviewStopSchema = z.object({

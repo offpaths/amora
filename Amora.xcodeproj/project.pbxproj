@@ -28,6 +28,7 @@
 		A10000000000000000000020 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* PrivacyInfo.xcprivacy */; };
 		A10000000000000000000021 /* UnlockedPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* UnlockedPlanStore.swift */; };
 		A10000000000000000000022 /* PrivacyControlsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* PrivacyControlsTests.swift */; };
+		A10000000000000000000023 /* PaywallViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* PaywallViewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +65,7 @@
 		A20000000000000000000023 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000024 /* UnlockedPlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockedPlanStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* PrivacyControlsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyControlsTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000026 /* PaywallViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallViewTests.swift; sourceTree = "<group>"; };
 		E7D9FC242FF00907004E9C09 /* Amora.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Amora.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -135,6 +137,7 @@
 				A20000000000000000000012 /* LocationLabelServiceTests.swift */,
 				A20000000000000000000014 /* PlanViewModelTests.swift */,
 				A20000000000000000000025 /* PrivacyControlsTests.swift */,
+				A20000000000000000000026 /* PaywallViewTests.swift */,
 			);
 			path = AmoraTests;
 			sourceTree = "<group>";
@@ -313,6 +316,7 @@
 				A10000000000000000000009 /* LocationLabelServiceTests.swift in Sources */,
 				A10000000000000000000011 /* PlanViewModelTests.swift in Sources */,
 				A10000000000000000000022 /* PrivacyControlsTests.swift in Sources */,
+				A10000000000000000000023 /* PaywallViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,11 +362,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = ZG5JF6U6C9;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Amora uses your location to suggest a nearby planning area.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+					CURRENT_PROJECT_VERSION = 1;
+					DEVELOPMENT_TEAM = ZG5JF6U6C9;
+					GENERATE_INFOPLIST_FILE = YES;
+					INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Amora uses your location to suggest a nearby planning area.";
+					INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;

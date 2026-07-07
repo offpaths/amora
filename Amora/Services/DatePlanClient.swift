@@ -2,7 +2,8 @@ import Foundation
 
 enum DatePlanClientError: Error, Equatable {
     case invalidResponse
-    case generationFailed
+    case generationFailed(statusCode: Int, body: String)
+    case decodingFailed(String)
     case unlockFailed
 }
 
@@ -21,11 +22,16 @@ struct DatePlanClient {
             throw DatePlanClientError.invalidResponse
         }
 
+        let responseBody = String(data: data, encoding: .utf8) ?? "<non-utf8 response>"
         guard httpResponse.statusCode == 200 else {
-            throw DatePlanClientError.generationFailed
+            throw DatePlanClientError.generationFailed(statusCode: httpResponse.statusCode, body: responseBody)
         }
 
-        return try JSONDecoder().decode(DatePlanResponse.self, from: data)
+        do {
+            return try JSONDecoder().decode(DatePlanResponse.self, from: data)
+        } catch {
+            throw DatePlanClientError.decodingFailed("Decode error: \(error)\nBody: \(responseBody)")
+        }
     }
 
     func unlockPlan(planToken: String, signedTransactionInfo: String) async throws -> UnlockedPlanResponse {

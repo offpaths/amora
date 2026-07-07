@@ -170,6 +170,74 @@ describe("POST /generate-plan", () => {
     expectCorsHeaders(response);
   });
 
+  it("returns the full generated plan for a valid active subscription proof", async () => {
+    const env = createEnv();
+    const signedRequest = {
+      ...validRequest,
+      signedTransactionInfo: "apple.signed.transaction.jws"
+    };
+
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify(signedRequest),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(validPlan);
+    expect(verifyActiveSubscriptionProof).toHaveBeenCalledWith("apple.signed.transaction.jws", env);
+    expect(generateDatePlan).toHaveBeenCalledWith(signedRequest, env);
+    expect(env.PLANS.put).not.toHaveBeenCalled();
+    expectCorsHeaders(response);
+  });
+
+  it("rejects invalid subscription proof before generating a full plan", async () => {
+    vi.mocked(verifyActiveSubscriptionProof).mockResolvedValueOnce(false);
+    const env = createEnv();
+
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validRequest,
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "subscription_required" });
+    expect(generateDatePlan).not.toHaveBeenCalled();
+    expect(env.PLANS.put).not.toHaveBeenCalled();
+  });
+
+  it("returns a retryable error when subscription proof verification fails during generation", async () => {
+    vi.mocked(verifyActiveSubscriptionProof).mockRejectedValueOnce(new Error("verification unavailable"));
+    const env = createEnv();
+
+    const response = await worker.fetch(
+      new Request("http://localhost/generate-plan", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validRequest,
+          signedTransactionInfo: "apple.signed.transaction.jws"
+        }),
+        headers: { "content-type": "application/json" }
+      }),
+      env
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: "subscription_verification_failed", retryable: true });
+    expect(generateDatePlan).not.toHaveBeenCalled();
+    expect(env.PLANS.put).not.toHaveBeenCalled();
+  });
+
   it("allows requests up to the per-client rate limit", async () => {
     const env = createEnv();
     for (let i = 0; i < 10; i += 1) {
@@ -330,6 +398,7 @@ describe("POST /generate-plan", () => {
   });
 
   it("returns a retryable error when generation fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(generateDatePlan).mockRejectedValueOnce(new Error("generation failed"));
 
     const response = await worker.fetch(
@@ -343,6 +412,12 @@ describe("POST /generate-plan", () => {
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ error: "generation_failed", retryable: true });
+    expect(consoleError).toHaveBeenCalledWith("generate_plan_failed", {
+      name: "Error",
+      constructorName: "Error",
+      message: "generation failed"
+    });
+    consoleError.mockRestore();
   });
 
   it("returns not found for non-POST methods", async () => {

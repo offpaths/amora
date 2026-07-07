@@ -69,6 +69,7 @@ struct GeneratePlanRequest: Codable, Equatable {
     var durationMinutes: Int
     var partnerLikes: String
     var regenerationAttempt: Int = 0
+    var signedTransactionInfo: String? = nil
 }
 
 struct DatePlanResponse: Codable, Equatable, Identifiable {
