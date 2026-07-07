@@ -13,6 +13,7 @@ export interface Env {
     get(key: string): Promise<string | null>;
   };
   APP_STORE_BUNDLE_ID?: string;
+  APP_STORE_ALLOWED_ENVIRONMENTS?: string;
   APP_STORE_ENVIRONMENT?: string;
   APP_STORE_APP_APPLE_ID?: string;
 }

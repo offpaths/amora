@@ -2,6 +2,10 @@ import XCTest
 @testable import Amora
 
 final class DatePlanModelsTests: XCTestCase {
+    func testBackendUsesProductionAPIForSubmissionBuilds() {
+        XCTAssertEqual(AppConfig.backendBaseURL, URL(string: "https://api.planwithamora.com")!)
+    }
+
     func testStoreKitProductIDsAreSubscriptionOnlyForMVP() {
         XCTAssertEqual(AppConfig.storeKitProductIDs, ["amora_plus_monthly"])
     }

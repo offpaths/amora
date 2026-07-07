@@ -31,6 +31,7 @@ Key decisions:
 - Replace vague `$ / $$ / $$$` budget input with a local-currency stepped budget-for-two control; make clear Amora plans around the amount rather than trying to spend it all.
 - When a saved unlocked plan exists, the first intake step shows a compact previous-plan card that opens the latest unlocked plan saved on this device.
 - Date-plan generation should consider activity-led stops by default when they fit the area, vibe, budget, duration, and personal context; the personal-anchor field should bias the plan toward any mentioned activities before falling back to generic food, drink, park, or coffee stops.
+- StoreKit backend verification uses one configured allow-list, `APP_STORE_ALLOWED_ENVIRONMENTS`, as the source of truth for accepted signed transaction proof environments. Submission builds and public deployments use only App Store environments (`Sandbox`, `Production`).
 
 ## Visual System
 
