@@ -170,6 +170,20 @@ describe("generateDatePlan", () => {
     expect(body.input).toContain("Return exactly 3 preview stops and exactly 3 locked stops.");
   });
 
+  it("includes activity-led planning guidance in the prompt", () => {
+    const prompt = buildPrompt({
+      ...validRequest,
+      vibe: "adventurous",
+      partnerLikes: "axe throwing, dumplings, playful competition"
+    });
+
+    expect(prompt).toContain("Prioritize activities explicitly mentioned in the partner likes or pasted context before inventing unrelated activity ideas.");
+    expect(prompt).toContain("For adventurous, playful, active, novelty, romantic, outdoorsy, cozy, low-key, or foodie vibes, consider one activity-led stop when it fits the planning area, budget, duration, and no-drinking constraint.");
+    expect(prompt).toContain("Activity-led stops can include axe throwing, bowling, pottery painting, mini golf, arcades, climbing, cooking classes, bookstores, galleries, museums, dance classes, markets, or similarly specific local experiences.");
+    expect(prompt).toContain("Restaurants, bars, coffee shops, parks, and walks may support the plan, but they should not become the default shape of most plans when a realistic activity-led option would feel more personal or memorable.");
+    expect(prompt).toContain("Do not force an activity stop when the area, budget, duration, or personal context makes it unrealistic.");
+  });
+
   it("asks for a meaningfully different itinerary on regeneration", () => {
     const prompt = buildPrompt({ ...validRequest, regenerationAttempt: 1 });
 
