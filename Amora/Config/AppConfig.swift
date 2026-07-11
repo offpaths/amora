@@ -6,5 +6,4 @@ enum AppConfig {
     static let storeKitProductIDs = [plusMonthlyProductID]
     static let privacyPolicyURL = URL(string: "https://planwithamora.com/privacy")!
     static let termsOfUseURL = URL(string: "https://planwithamora.com/terms")!
-    static let supportURL = URL(string: "https://planwithamora.com/support")!
 }

@@ -10,8 +10,7 @@ final class PaywallViewTests: XCTestCase {
                 isLoading: false,
                 hasCurrentPlan: true,
                 isEditingPreferences: false,
-                isUnlocked: false,
-                hasActiveSubscription: true
+                isUnlocked: false
             ),
             .previewPlan
         )
@@ -25,8 +24,7 @@ final class PaywallViewTests: XCTestCase {
                 isLoading: false,
                 hasCurrentPlan: true,
                 isEditingPreferences: false,
-                isUnlocked: false,
-                hasActiveSubscription: false
+                isUnlocked: false
             ),
             .previewPlan
         )
@@ -40,8 +38,7 @@ final class PaywallViewTests: XCTestCase {
                 isLoading: false,
                 hasCurrentPlan: true,
                 isEditingPreferences: false,
-                isUnlocked: true,
-                hasActiveSubscription: true
+                isUnlocked: true
             ),
             .unlockedPlan
         )

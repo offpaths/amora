@@ -106,10 +106,6 @@ final class LocationLabelService: NSObject, @preconcurrency CLLocationManagerDel
         manager.requestWhenInUseAuthorization()
     }
 
-    func currentAreaLabel() async throws -> String {
-        try await currentPlanningArea()?.label ?? ""
-    }
-
     func currentPlanningArea() async throws -> PlanningArea? {
         let location: CLLocation?
         if let cachedLocation = manager.location {

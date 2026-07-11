@@ -32,4 +32,17 @@ final class PrivacyControlsTests: XCTestCase {
             "The app should not expose in-app analytics controls because analytics collection is removed."
         )
     }
+
+    func testPlanningInputsExposeVoiceOverLabelsAndBudgetValue() throws {
+        let sourceURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Amora/Views/InputView.swift")
+        let source = try String(contentsOf: sourceURL, encoding: .utf8)
+
+        XCTAssertTrue(source.contains("accessibilityLabel(\"Personal anchor\")"))
+        XCTAssertTrue(source.contains("accessibilityLabel(\"Plan near\")"))
+        XCTAssertTrue(source.contains("accessibilityLabel(\"Budget for two\")"))
+        XCTAssertTrue(source.contains("accessibilityValue(selectedBudgetLabel)"))
+    }
 }

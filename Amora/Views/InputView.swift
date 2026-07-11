@@ -77,6 +77,8 @@ struct InputView: View {
                     TextField("She mentioned matcha, art books, quiet places...", text: $viewModel.partnerLikes, axis: .vertical)
                         .lineLimit(5...8)
                         .textFieldStyle(.plain)
+                        .accessibilityLabel("Personal anchor")
+                        .accessibilityHint("Optional details about what would make the date feel personal.")
                 }
             }
 
@@ -87,6 +89,8 @@ struct InputView: View {
                         .foregroundStyle(AmoraTheme.muted)
                     TextField("Neighborhood or city", text: locationText)
                         .textFieldStyle(.plain)
+                        .accessibilityLabel("Plan near")
+                        .accessibilityHint("Enter a neighborhood or city, or detect your current area.")
 
                     if !locationSuggestionService.suggestions.isEmpty {
                         VStack(alignment: .leading, spacing: 0) {
@@ -131,6 +135,7 @@ struct InputView: View {
                         Label(isDetectingLocation ? "Finding your area" : "Detect my area", systemImage: "location")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(AmoraTheme.oxblood)
+                            .frame(minHeight: 44)
                     }
                     .disabled(isDetectingLocation)
                 }
@@ -191,6 +196,7 @@ struct InputView: View {
                 Label("Back", systemImage: "chevron.left")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AmoraTheme.oxblood)
+                    .frame(minHeight: 44)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -234,6 +240,9 @@ struct InputView: View {
                         step: 1
                     )
                     .tint(AmoraTheme.oxblood)
+                    .accessibilityLabel("Budget for two")
+                    .accessibilityValue(selectedBudgetLabel)
+                    .accessibilityHint("Adjust the approximate spend comfort for the full date.")
 
                     Text("Amora will plan around this amount, not spend it for the sake of it.")
                         .font(.footnote)
@@ -342,9 +351,11 @@ struct InputView: View {
         do {
             if let area = try await locationService.currentPlanningArea(), !area.label.isEmpty {
                 viewModel.setPlanningArea(label: area.label, countryCode: area.countryCode)
+            } else {
+                viewModel.errorMessage = "We could not detect your area. Enter a neighborhood or city instead."
             }
         } catch {
-            viewModel.errorMessage = "We could not detect your area. Enter it manually."
+            viewModel.errorMessage = "We could not detect your area. Enter a neighborhood or city instead."
         }
     }
 

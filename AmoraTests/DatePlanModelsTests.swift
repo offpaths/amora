@@ -57,7 +57,7 @@ final class DatePlanModelsTests: XCTestCase {
         XCTAssertEqual(
             LoadingPlanView.statusMessages,
             [
-                "Learning her preferences",
+                "Considering the details you shared",
                 "Scouting nearby locations",
                 "Matching to your constraints",
                 "Finalising your plan"

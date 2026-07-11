@@ -14,8 +14,7 @@ enum ContentRoute: Equatable {
         isLoading: Bool,
         hasCurrentPlan: Bool,
         isEditingPreferences: Bool,
-        isUnlocked: Bool,
-        hasActiveSubscription: Bool
+        isUnlocked: Bool
     ) -> ContentRoute {
         if isShowingOpeningLoading {
             return .openingLoading
@@ -52,8 +51,7 @@ struct ContentView: View {
             isLoading: viewModel.isLoading,
             hasCurrentPlan: viewModel.currentPlan != nil,
             isEditingPreferences: isEditingPreferences,
-            isUnlocked: viewModel.isUnlocked,
-            hasActiveSubscription: viewModel.hasActiveSubscription
+            isUnlocked: viewModel.isUnlocked
         )
 
         return Group {

@@ -51,6 +51,13 @@ struct PaywallView: View {
                     }
                     .disabled(!canPurchaseSubscription)
 
+                    if let purchaseMessage = purchaseService.purchaseMessage {
+                        Text(purchaseMessage)
+                            .font(.footnote)
+                            .foregroundStyle(AmoraTheme.muted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     VStack(spacing: 12) {
                         Button {
                             Task {
@@ -61,6 +68,7 @@ struct PaywallView: View {
                                 .font(.footnote.weight(.semibold))
                                 .foregroundStyle(AmoraTheme.oxblood)
                                 .frame(maxWidth: .infinity)
+                                .frame(minHeight: 44)
                         }
                         .disabled(purchaseService.isRestoringPurchases)
 
@@ -72,6 +80,7 @@ struct PaywallView: View {
                                     .font(.footnote.weight(.semibold))
                                     .foregroundStyle(AmoraTheme.oxblood)
                                     .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 44)
                             }
                         }
 

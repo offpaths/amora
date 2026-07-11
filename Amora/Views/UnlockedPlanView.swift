@@ -49,9 +49,16 @@ struct UnlockedPlanView: View {
                                                     .fixedSize(horizontal: false, vertical: true)
                                             }
                                             .frame(maxWidth: .infinity, alignment: .leading)
-                                            HStack {
-                                                PillLabel(text: "\(stop.durationMinutes) min", tint: AmoraTheme.brass)
-                                                PillLabel(text: stop.estimatedCost, tint: AmoraTheme.olive)
+                                            ViewThatFits(in: .horizontal) {
+                                                HStack {
+                                                    PillLabel(text: "\(stop.durationMinutes) min", tint: AmoraTheme.brass)
+                                                    PillLabel(text: stop.estimatedCost, tint: AmoraTheme.olive)
+                                                }
+
+                                                VStack(alignment: .leading, spacing: 8) {
+                                                    PillLabel(text: "\(stop.durationMinutes) min", tint: AmoraTheme.brass)
+                                                    PillLabel(text: stop.estimatedCost, tint: AmoraTheme.olive)
+                                                }
                                             }
                                             Button {
                                                 openURL(appleMapsURL(for: stop))
@@ -60,7 +67,7 @@ struct UnlockedPlanView: View {
                                                     .font(.subheadline.weight(.semibold))
                                                     .foregroundStyle(AmoraTheme.oxblood)
                                                     .frame(maxWidth: .infinity)
-                                                    .padding(.vertical, 12)
+                                                    .frame(minHeight: 44)
                                                     .background(AmoraTheme.surface)
                                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                                     .overlay {

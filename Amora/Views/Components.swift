@@ -166,7 +166,7 @@ private struct OpeningLoadingArtwork: View {
 
 struct LoadingPlanView: View {
     static let statusMessages = [
-        "Learning her preferences",
+        "Considering the details you shared",
         "Scouting nearby locations",
         "Matching to your constraints",
         "Finalising your plan"

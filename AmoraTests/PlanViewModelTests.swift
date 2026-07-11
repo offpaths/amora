@@ -48,6 +48,25 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isUnlocked)
     }
 
+    func testRegeneratePreviewRequestsAMeaningfullyDifferentPlan() async {
+        var requests: [GeneratePlanRequest] = []
+        var count = 0
+        let viewModel = PlanViewModel(generate: { request in
+            requests.append(request)
+            count += 1
+            return Self.samplePlan(id: "plan_\(count)")
+        })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+        await viewModel.regeneratePreview()
+
+        XCTAssertEqual(viewModel.currentPlan?.id, "plan_2")
+        XCTAssertEqual(requests.map(\.regenerationAttempt), [0, 1])
+    }
+
     func testUnlockCurrentPlanUsesBackendProofWithoutSubscriptionRegenerateAccess() async {
         var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
         let viewModel = PlanViewModel(
@@ -146,6 +165,19 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.currentPlan)
         XCTAssertEqual(viewModel.errorMessage, "Accept the AI disclosure to create your plan.")
         XCTAssertTrue(viewModel.isCreatePlanDisabled)
+    }
+
+    func testGeneratePreviewExplainsRateLimitRecovery() async {
+        let viewModel = PlanViewModel(generate: { _ in
+            throw DatePlanClientError.generationFailed(statusCode: 429, body: #"{"error":"rate_limited"}"#)
+        })
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+
+        XCTAssertEqual(viewModel.errorMessage, "Too many plans were requested from this connection. Wait a few minutes, then try again.")
     }
 
     func testAcceptingAIDisclosureEnablesCreatePlan() {
@@ -377,7 +409,7 @@ final class PlanViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.currentPlan?.id, "plan_1")
         XCTAssertEqual(unlockCalls.map(\.planToken), ["token-plan_1"])
-        XCTAssertEqual(viewModel.errorMessage, "We could not generate a plan. Try again.")
+        XCTAssertEqual(viewModel.errorMessage, "We could not create your plan. Try again in a moment.")
         XCTAssertTrue(viewModel.isUnlocked)
     }
 

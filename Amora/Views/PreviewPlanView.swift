@@ -60,7 +60,7 @@ struct PreviewPlanView: View {
                     SecondaryButton("Edit Preferences", systemImage: "slider.horizontal.3", action: onEditPreferences)
 
                     SecondaryButton("Make It Feel Different", systemImage: "arrow.clockwise") {
-                        Task { await viewModel.generatePreview() }
+                        Task { await viewModel.regeneratePreview() }
                     }
                     .disabled(viewModel.isLoading)
                 }

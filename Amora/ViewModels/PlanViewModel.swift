@@ -27,6 +27,7 @@ final class PlanViewModel: ObservableObject {
     private let generate: (GeneratePlanRequest) async throws -> DatePlanResponse
     private let unlock: (String, String) async throws -> UnlockedPlanResponse
     private let unlockedPlanStore: UnlockedPlanStore
+    private let maximumRegenerationAttempt = 20
     private var regenerationAttempt = 0
     private var activeSignedTransactionInfo: String?
 
@@ -121,13 +122,13 @@ final class PlanViewModel: ObservableObject {
                     isShowingSavedUnlockedPlan = false
                     errorMessage = nil
                 } catch {
-                    errorMessage = "We could not generate a plan. Try again."
+                    errorMessage = generationErrorMessage(for: error)
                 }
             } else {
-                errorMessage = "We could not generate a plan. Try again."
+                errorMessage = generationErrorMessage(for: error)
             }
         } catch {
-            errorMessage = "We could not generate a plan. Try again."
+            errorMessage = generationErrorMessage(for: error)
         }
     }
 
@@ -214,11 +215,16 @@ final class PlanViewModel: ObservableObject {
         guard canRegenerateUnlockedPlan else { return }
         let signedTransactionInfo = activeSignedTransactionInfo
         let previousPlanID = currentPlan?.id
-        regenerationAttempt += 1
+        incrementRegenerationAttempt()
         await generatePreview()
         if currentPlan?.id != previousPlanID, !isUnlocked {
             await unlockCurrentPlan(signedTransactionInfo: signedTransactionInfo)
         }
+    }
+
+    func regeneratePreview() async {
+        incrementRegenerationAttempt()
+        await generatePreview()
     }
 
     func acceptAIDisclosure() {
@@ -242,6 +248,29 @@ final class PlanViewModel: ObservableObject {
     private func saveLatestUnlockedPlan(_ plan: DatePlanResponse) {
         unlockedPlanStore.save(plan: plan)
         savedUnlockedPlan = unlockedPlanStore.load()
+    }
+
+    private func incrementRegenerationAttempt() {
+        regenerationAttempt = min(regenerationAttempt + 1, maximumRegenerationAttempt)
+    }
+
+    private func generationErrorMessage(for error: Error) -> String {
+        if case .generationFailed(let statusCode, _) = error as? DatePlanClientError {
+            switch statusCode {
+            case 429:
+                return "Too many plans were requested from this connection. Wait a few minutes, then try again."
+            case 400:
+                return "Check your planning area and preferences, then try again."
+            default:
+                break
+            }
+        }
+
+        if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+            return "You appear to be offline. Reconnect, then try creating your plan again."
+        }
+
+        return "We could not create your plan. Try again in a moment."
     }
 }
 

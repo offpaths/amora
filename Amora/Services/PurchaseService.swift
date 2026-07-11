@@ -10,9 +10,23 @@ final class PurchaseService: ObservableObject {
     @Published private(set) var isLoadingProducts = false
     @Published private(set) var didLoadProducts = false
     @Published private(set) var isRestoringPurchases = false
+    @Published private(set) var purchaseMessage: String?
+    private var transactionUpdatesTask: Task<Void, Never>?
 
-    func loadProduct() async {
-        await loadProducts()
+    init() {
+        transactionUpdatesTask = Task { [weak self] in
+            for await update in Transaction.updates {
+                guard !Task.isCancelled else { return }
+                if case .verified(let transaction) = update {
+                    await transaction.finish()
+                }
+                await self?.refreshSubscriptionStatus()
+            }
+        }
+    }
+
+    deinit {
+        transactionUpdatesTask?.cancel()
     }
 
     func loadProducts() async {
@@ -25,9 +39,11 @@ final class PurchaseService: ObservableObject {
         do {
             let products = try await Product.products(for: AppConfig.storeKitProductIDs)
             plusMonthlyProduct = products.first { $0.id == AppConfig.plusMonthlyProductID }
+            purchaseMessage = plusMonthlyProduct == nil ? "Amora Plus is unavailable right now. Try again in a moment." : nil
             await refreshSubscriptionStatus()
         } catch {
             plusMonthlyProduct = nil
+            purchaseMessage = "Amora Plus is unavailable right now. Check your connection and try again."
         }
     }
 
@@ -74,6 +90,11 @@ final class PurchaseService: ObservableObject {
         }
 
         await refreshSubscriptionStatus()
+        if !hasActiveSubscription {
+            purchaseMessage = "No active Amora Plus subscription was found. Try the Apple Account used for the purchase."
+        } else {
+            purchaseMessage = nil
+        }
     }
 
     private func purchase(_ product: Product) async -> Bool {
@@ -81,10 +102,19 @@ final class PurchaseService: ObservableObject {
             let result = try await product.purchase()
             if case .success(let verification) = result, case .verified(let transaction) = verification {
                 await transaction.finish()
+                purchaseMessage = nil
                 return true
+            }
+            if case .userCancelled = result {
+                purchaseMessage = "Purchase cancelled. Your preview is still here when you are ready."
+            } else if case .pending = result {
+                purchaseMessage = "Your purchase is waiting for approval. We will unlock the plan once Apple confirms it."
+            } else {
+                purchaseMessage = "We could not verify that purchase. Try restoring your purchases."
             }
             return false
         } catch {
+            purchaseMessage = "We could not start the purchase. Check your connection and try again."
             return false
         }
     }

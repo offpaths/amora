@@ -179,12 +179,36 @@ function verificationStatusName(status: number): string {
 class RequestTooLargeError extends Error {}
 
 async function readJsonBody(request: Request): Promise<unknown> {
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BYTES) {
-    throw new RequestTooLargeError();
+  const reader = request.body?.getReader();
+  if (!reader) {
+    throw new SyntaxError("missing request body");
   }
 
-  return JSON.parse(text);
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_REQUEST_BYTES) {
+      await reader.cancel();
+      throw new RequestTooLargeError();
+    }
+    chunks.push(value);
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return JSON.parse(new TextDecoder().decode(body));
 }
 
 export class RateLimiter {
