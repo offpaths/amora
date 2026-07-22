@@ -4,6 +4,30 @@
 
 These are possible features to consider after the Thursday MVP. They are not part of the current MVP unless explicitly moved into scope.
 
+### Stop-by-Stop Polaroid Memories
+
+Let users take a photo or choose one from their library for each stop in a completed date plan, then present it in an emulated Polaroid frame as a keepsake.
+
+Possible capabilities:
+
+- Capture a photo with the camera at a date stop.
+- Choose an existing photo from the user's library.
+- Attach one Polaroid-style memory to each itinerary stop.
+- Save memories to the user's account alongside the completed plan.
+- Revisit the completed plan as a visual record of the date.
+
+Why it could matter:
+
+- Turns a useful itinerary into a lasting shared-memory product.
+- Encourages users to return to completed plans.
+- Makes each date feel more personal and memorable.
+
+Risks:
+
+- Requires an account system and secure photo storage.
+- Needs clear camera and photo-library permissions plus privacy controls.
+- Photo uploads, storage costs, and deletion controls add operational complexity.
+
 ### Current Events In Plans
 
 Suggest current events as part of the generated date plan.
