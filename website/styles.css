@@ -92,10 +92,6 @@ main {
   padding-top: clamp(32px, 5vw, 56px);
 }
 
-#waitlist {
-  scroll-margin-top: 96px;
-}
-
 .wrap {
   margin: 0 auto;
   max-width: 1120px;
