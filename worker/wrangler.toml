@@ -5,9 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 APP_STORE_BUNDLE_ID = "com.planwithamora.Amora"
-# Public deployments should use App Store environments only.
-# Add Production here and set APP_STORE_APP_APPLE_ID when validating live App Store proofs.
-APP_STORE_ALLOWED_ENVIRONMENTS = "Sandbox"
+# Public deployments accept only live App Store subscription transactions.
+APP_STORE_ALLOWED_ENVIRONMENTS = "Production"
+APP_STORE_APP_APPLE_ID = "6785801141"
 
 [[durable_objects.bindings]]
 name = "RATE_LIMITER"
