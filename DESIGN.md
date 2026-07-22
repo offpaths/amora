@@ -63,3 +63,19 @@ Reusable component styling:
 - Pills use semibold caption text, tinted text, a 10% tint background, and a 24% tint border.
 - Itinerary numbers are 28pt circles with ink fill and surface-colored number text.
 - Stop illustration panels use brass wash backgrounds, oxblood primary icons, and olive secondary accents.
+
+## Proposed iOS App Design Refresh
+
+Status: Draft pending product confirmation.
+
+The proposed screen-by-screen design system is recorded in `docs/design/2026-07-21-amora-ios-app-design-prd.md`.
+
+Key proposed decisions:
+
+- Use SF Symbols as the single functional icon family; keep the app icon and brand mark as custom artwork.
+- Pair New York for editorial display roles with SF Pro for body copy, controls, metadata, and numbers.
+- Preserve the current warm ivory light appearance and add a purpose-built midnight-wine Dark appearance with semantic Light, Dark, and Increased Contrast color variants.
+- Give each route its own task-led composition while sharing tokens and components.
+- Treat the supplied promotional images as mood and hierarchy references, not literal 3D component specifications.
+
+These decisions do not replace the approved visual-system section above until the draft PRD is confirmed.
