@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import PostHog
 
 @MainActor
 final class PlanViewModel: ObservableObject {
@@ -112,6 +113,17 @@ final class PlanViewModel: ObservableObject {
             if isUnlocked, let currentPlan {
                 saveLatestUnlockedPlan(currentPlan)
             }
+            PostHogSDK.shared.capture("date_plan_generated", properties: [
+                "vibe": vibe.rawValue,
+                "budget_amount": budgetAmount,
+                "country_code": planningAreaCountryCode,
+                "duration_minutes": durationMinutes,
+                "no_drinking": noDrinking,
+                "has_partner_likes": !partnerLikes.isEmpty,
+                "stop_count": currentPlan?.preview.stops.count ?? 0,
+                "is_unlocked": isUnlocked,
+                "regeneration_attempt": regenerationAttempt
+            ])
         } catch let error as DatePlanClientError {
             if error.isSubscriptionRequiredGenerationFailure {
                 hasActiveSubscription = false
@@ -121,14 +133,28 @@ final class PlanViewModel: ObservableObject {
                     isUnlocked = false
                     isShowingSavedUnlockedPlan = false
                     errorMessage = nil
+                    PostHogSDK.shared.capture("date_plan_generated", properties: [
+                        "vibe": vibe.rawValue,
+                        "budget_amount": budgetAmount,
+                        "country_code": planningAreaCountryCode,
+                        "duration_minutes": durationMinutes,
+                        "no_drinking": noDrinking,
+                        "has_partner_likes": !partnerLikes.isEmpty,
+                        "stop_count": currentPlan?.preview.stops.count ?? 0,
+                        "is_unlocked": false,
+                        "regeneration_attempt": regenerationAttempt
+                    ])
                 } catch {
                     errorMessage = generationErrorMessage(for: error)
+                    PostHogSDK.shared.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
                 }
             } else {
                 errorMessage = generationErrorMessage(for: error)
+                PostHogSDK.shared.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
             }
         } catch {
             errorMessage = generationErrorMessage(for: error)
+            PostHogSDK.shared.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
         }
     }
 
@@ -157,6 +183,7 @@ final class PlanViewModel: ObservableObject {
             isShowingSavedUnlockedPlan = false
             activeSignedTransactionInfo = signedTransactionInfo
             saveLatestUnlockedPlan(currentPlan)
+            PostHogSDK.shared.capture("plan_unlocked")
             return true
         } catch {
             isUnlocked = false
@@ -191,6 +218,7 @@ final class PlanViewModel: ObservableObject {
         isShowingSavedUnlockedPlan = false
         regenerationAttempt = 0
         errorMessage = nil
+        PostHogSDK.shared.capture("new_date_started")
     }
 
     func returnToSavedUnlockedPlan() {
@@ -199,6 +227,7 @@ final class PlanViewModel: ObservableObject {
         isUnlocked = true
         isShowingSavedUnlockedPlan = true
         errorMessage = nil
+        PostHogSDK.shared.capture("previous_plan_restored")
     }
 
     func setPlanningArea(label: String, countryCode: String) {
@@ -216,6 +245,7 @@ final class PlanViewModel: ObservableObject {
         let signedTransactionInfo = activeSignedTransactionInfo
         let previousPlanID = currentPlan?.id
         incrementRegenerationAttempt()
+        PostHogSDK.shared.capture("unlocked_plan_regenerated", properties: ["regeneration_attempt": regenerationAttempt])
         await generatePreview()
         if currentPlan?.id != previousPlanID, !isUnlocked {
             await unlockCurrentPlan(signedTransactionInfo: signedTransactionInfo)
@@ -224,11 +254,13 @@ final class PlanViewModel: ObservableObject {
 
     func regeneratePreview() async {
         incrementRegenerationAttempt()
+        PostHogSDK.shared.capture("plan_preview_regenerated", properties: ["regeneration_attempt": regenerationAttempt])
         await generatePreview()
     }
 
     func acceptAIDisclosure() {
         hasAcceptedAIDisclosure = true
+        PostHogSDK.shared.capture("ai_consent_accepted")
     }
 
     private func makeRequest() -> GeneratePlanRequest {
@@ -271,6 +303,20 @@ final class PlanViewModel: ObservableObject {
         }
 
         return "We could not create your plan. Try again in a moment."
+    }
+
+    private func generationErrorType(for error: Error) -> String {
+        if case .generationFailed(let statusCode, _) = error as? DatePlanClientError {
+            switch statusCode {
+            case 429: return "rate_limited"
+            case 400: return "bad_request"
+            default: return "api_error"
+            }
+        }
+        if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+            return "offline"
+        }
+        return "unknown"
     }
 }
 

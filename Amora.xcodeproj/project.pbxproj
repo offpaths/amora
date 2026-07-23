@@ -29,6 +29,7 @@
 		A10000000000000000000021 /* UnlockedPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* UnlockedPlanStore.swift */; };
 		A10000000000000000000022 /* PrivacyControlsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* PrivacyControlsTests.swift */; };
 		A10000000000000000000023 /* PaywallViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* PaywallViewTests.swift */; };
+		B00000000000000000000001 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000001 /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00000000000000000000001 /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -206,6 +208,9 @@
 			dependencies = (
 			);
 			name = Amora;
+			packageProductDependencies = (
+				B10000000000000000000001 /* PostHog */,
+			);
 			productName = Amora;
 			productReference = A20000000000000000000006 /* Amora.app */;
 			productType = "com.apple.product-type.application";
@@ -256,6 +261,9 @@
 				Base,
 			);
 			mainGroup = A40000000000000000000001;
+			packageReferences = (
+				B20000000000000000000001 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+			);
 			productRefGroup = A40000000000000000000007 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -329,6 +337,25 @@
 			targetProxy = A80000000000000000000002 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B20000000000000000000001 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
+			requirement = {
+				from = 3.67.0;
+				kind = upToNextMajorVersion;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B10000000000000000000001 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B20000000000000000000001 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A91000000000000000000001 /* Debug */ = {

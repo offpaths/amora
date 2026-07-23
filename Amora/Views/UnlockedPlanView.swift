@@ -1,3 +1,4 @@
+import PostHog
 import SwiftUI
 
 struct UnlockedPlanView: View {
@@ -61,6 +62,7 @@ struct UnlockedPlanView: View {
                                                 }
                                             }
                                             Button {
+                                                PostHogSDK.shared.capture("venue_opened_in_maps", properties: ["stop_order": stop.order])
                                                 openURL(appleMapsURL(for: stop))
                                             } label: {
                                                 Label("Open in Apple Maps", systemImage: "map")
