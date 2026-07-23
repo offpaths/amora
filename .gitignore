@@ -6,3 +6,6 @@ worker/node_modules/
 worker/.dev.vars
 Amora.xcodeproj/project.xcworkspace/xcuserdata/
 .env
+.env.example
+*.mp4
+*.MP4
