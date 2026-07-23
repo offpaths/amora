@@ -29,8 +29,27 @@ final class PrivacyControlsTests: XCTestCase {
 
         XCTAssertFalse(
             source.contains("AnalyticsPrivacyToggle") || source.contains("Share app analytics"),
-            "The app should not expose in-app analytics controls because analytics collection is removed."
+            "The app should not expose an analytics toggle because anonymous analytics are enabled by default."
         )
+    }
+
+    func testPostHogDoesNotAutocaptureErrorsOrIdentifyPurchasers() throws {
+        let projectRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let appSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("Amora/AmoraApp.swift"),
+            encoding: .utf8
+        )
+        let purchaseSource = try String(
+            contentsOf: projectRoot.appendingPathComponent("Amora/Services/PurchaseService.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertFalse(appSource.contains("errorTrackingConfig.autoCapture = true"))
+        XCTAssertTrue(appSource.contains("config.personProfiles = .never"))
+        XCTAssertFalse(purchaseSource.contains("PostHogSDK.shared.identify"))
+        XCTAssertFalse(purchaseSource.contains("transaction.originalID"))
     }
 
     func testPlanningInputsExposeVoiceOverLabelsAndBudgetValue() throws {

@@ -1,4 +1,3 @@
-import PostHog
 import SwiftUI
 
 enum ContentRoute: Equatable {
@@ -37,13 +36,20 @@ enum ContentRoute: Equatable {
 }
 
 struct ContentView: View {
-    @StateObject private var viewModel = PlanViewModel()
-    @StateObject private var purchaseService = PurchaseService()
+    @StateObject private var viewModel: PlanViewModel
+    @StateObject private var purchaseService: PurchaseService
+    private let analytics: any AnalyticsTracking
     @State private var showingPaywall = false
     @State private var isEditingPreferences = false
     @State private var isShowingOpeningLoading = true
     @State private var hasStartedOpeningTask = false
     @State private var isCompletingPaywallPurchase = false
+
+    init(analytics: any AnalyticsTracking = PostHogAnalytics.shared) {
+        self.analytics = analytics
+        _viewModel = StateObject(wrappedValue: PlanViewModel(analytics: analytics))
+        _purchaseService = StateObject(wrappedValue: PurchaseService(analytics: analytics))
+    }
 
     var body: some View {
         let route = ContentRoute.resolve(
@@ -71,20 +77,20 @@ struct ContentView: View {
                     isEditingPreferences = false
                 }
             } else if route == .unlockedPlan {
-                UnlockedPlanView(viewModel: viewModel) {
+                UnlockedPlanView(viewModel: viewModel, analytics: analytics) {
                     viewModel.startNewDate()
                 }
             } else {
                 PreviewPlanView(viewModel: viewModel) {
                     showingPaywall = true
-                    PostHogSDK.shared.capture("paywall_opened")
+                    analytics.capture("paywall_opened")
                 } onEditPreferences: {
                     isEditingPreferences = true
                 }
             }
         }
         .sheet(isPresented: $showingPaywall) {
-            PaywallView(purchaseService: purchaseService) { _ in
+            PaywallView(purchaseService: purchaseService, analytics: analytics) { _ in
             } onPurchased: { success in
                 Task {
                     guard success else { return }

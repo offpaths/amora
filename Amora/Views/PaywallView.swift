@@ -1,4 +1,3 @@
-import PostHog
 import StoreKit
 import SwiftUI
 
@@ -6,7 +5,20 @@ struct PaywallView: View {
     @ObservedObject var purchaseService: PurchaseService
     let onPurchaseStarted: (String) -> Void
     let onPurchased: (Bool) -> Void
+    private let analytics: any AnalyticsTracking
     @State private var isShowingManageSubscriptions = false
+
+    init(
+        purchaseService: PurchaseService,
+        analytics: any AnalyticsTracking = PostHogAnalytics.shared,
+        onPurchaseStarted: @escaping (String) -> Void,
+        onPurchased: @escaping (Bool) -> Void
+    ) {
+        self.purchaseService = purchaseService
+        self.analytics = analytics
+        self.onPurchaseStarted = onPurchaseStarted
+        self.onPurchased = onPurchased
+    }
 
     private var isPreparingPurchase: Bool {
         purchaseService.isLoadingProducts || !purchaseService.didLoadProducts
@@ -45,7 +57,7 @@ struct PaywallView: View {
 
                     PrimaryButton(title: primaryButtonTitle, isLoading: isPreparingPurchase) {
                         Task {
-                            PostHogSDK.shared.capture("subscription_purchase_started")
+                            analytics.capture("subscription_purchase_started")
                             onPurchaseStarted("subscription")
                             let success = await purchaseService.purchasePlusMonthly()
                             onPurchased(success)
