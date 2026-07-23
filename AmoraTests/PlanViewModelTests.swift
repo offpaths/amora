@@ -181,11 +181,48 @@ final class PlanViewModelTests: XCTestCase {
     }
 
     func testAcceptingAIDisclosureEnablesCreatePlan() {
-        let viewModel = PlanViewModel()
+        let analytics = AnalyticsMock()
+        let viewModel = PlanViewModel(analytics: analytics)
 
-        viewModel.hasAcceptedAIDisclosure = true
+        viewModel.acceptAIDisclosure()
 
         XCTAssertFalse(viewModel.isCreatePlanDisabled)
+        XCTAssertEqual(analytics.events.map(\.name), ["ai_consent_accepted"])
+        XCTAssertTrue(analytics.events[0].properties.isEmpty)
+    }
+
+    func testGeneratingPreviewCapturesCompactFunnelEvent() async {
+        let analytics = AnalyticsMock()
+        let viewModel = PlanViewModel(
+            generate: { _ in Self.samplePlan(id: "plan_one") },
+            analytics: analytics
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+
+        XCTAssertEqual(analytics.events.map(\.name), ["date_plan_generated"])
+        XCTAssertNil(analytics.events[0].properties["location_label"])
+        XCTAssertNil(analytics.events[0].properties["country_code"])
+        XCTAssertNil(analytics.events[0].properties["partner_likes"])
+    }
+
+    func testGenerationFailureCapturesOnlyErrorCategory() async {
+        let analytics = AnalyticsMock()
+        let viewModel = PlanViewModel(
+            generate: { _ in throw URLError(.notConnectedToInternet) },
+            analytics: analytics
+        )
+        viewModel.locationLabel = "Williamsburg, Brooklyn"
+        viewModel.planningAreaCountryCode = "US"
+        viewModel.hasAcceptedAIDisclosure = true
+
+        await viewModel.generatePreview()
+
+        XCTAssertEqual(analytics.events.map(\.name), ["date_plan_generation_failed"])
+        XCTAssertEqual(analytics.events[0].properties["error_type"] as? String, "offline")
     }
 
     func testSubscriptionPurchaseUnlocksCurrentPlanThroughBackend() async {
@@ -646,5 +683,19 @@ final class PlanViewModelTests: XCTestCase {
                 ]
             )
         )
+    }
+}
+
+@MainActor
+private final class AnalyticsMock: AnalyticsTracking {
+    struct Event {
+        let name: String
+        let properties: [String: Any]
+    }
+
+    private(set) var events: [Event] = []
+
+    func capture(_ event: String, properties: [String: Any]) {
+        events.append(Event(name: event, properties: properties))
     }
 }

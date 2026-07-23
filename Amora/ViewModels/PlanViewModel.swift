@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-import PostHog
 
 @MainActor
 final class PlanViewModel: ObservableObject {
@@ -28,6 +27,7 @@ final class PlanViewModel: ObservableObject {
     private let generate: (GeneratePlanRequest) async throws -> DatePlanResponse
     private let unlock: (String, String) async throws -> UnlockedPlanResponse
     private let unlockedPlanStore: UnlockedPlanStore
+    private let analytics: any AnalyticsTracking
     private let maximumRegenerationAttempt = 20
     private var regenerationAttempt = 0
     private var activeSignedTransactionInfo: String?
@@ -42,12 +42,14 @@ final class PlanViewModel: ObservableObject {
                 signedTransactionInfo: $1
             )
         },
-        unlockedPlanStore: UnlockedPlanStore = UnlockedPlanStore()
+        unlockedPlanStore: UnlockedPlanStore = UnlockedPlanStore(),
+        analytics: any AnalyticsTracking = PostHogAnalytics.shared
     ) {
         hasAcceptedAIDisclosure = UserDefaults.standard.bool(forKey: Self.aiDisclosureConsentKey)
         self.generate = generate
         self.unlock = unlock
         self.unlockedPlanStore = unlockedPlanStore
+        self.analytics = analytics
         savedUnlockedPlan = unlockedPlanStore.load()
     }
 
@@ -113,10 +115,9 @@ final class PlanViewModel: ObservableObject {
             if isUnlocked, let currentPlan {
                 saveLatestUnlockedPlan(currentPlan)
             }
-            PostHogSDK.shared.capture("date_plan_generated", properties: [
+            analytics.capture("date_plan_generated", properties: [
                 "vibe": vibe.rawValue,
                 "budget_amount": budgetAmount,
-                "country_code": planningAreaCountryCode,
                 "duration_minutes": durationMinutes,
                 "no_drinking": noDrinking,
                 "has_partner_likes": !partnerLikes.isEmpty,
@@ -133,10 +134,9 @@ final class PlanViewModel: ObservableObject {
                     isUnlocked = false
                     isShowingSavedUnlockedPlan = false
                     errorMessage = nil
-                    PostHogSDK.shared.capture("date_plan_generated", properties: [
+                    analytics.capture("date_plan_generated", properties: [
                         "vibe": vibe.rawValue,
                         "budget_amount": budgetAmount,
-                        "country_code": planningAreaCountryCode,
                         "duration_minutes": durationMinutes,
                         "no_drinking": noDrinking,
                         "has_partner_likes": !partnerLikes.isEmpty,
@@ -146,15 +146,15 @@ final class PlanViewModel: ObservableObject {
                     ])
                 } catch {
                     errorMessage = generationErrorMessage(for: error)
-                    PostHogSDK.shared.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
+                    analytics.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
                 }
             } else {
                 errorMessage = generationErrorMessage(for: error)
-                PostHogSDK.shared.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
+                analytics.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
             }
         } catch {
             errorMessage = generationErrorMessage(for: error)
-            PostHogSDK.shared.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
+            analytics.capture("date_plan_generation_failed", properties: ["error_type": generationErrorType(for: error)])
         }
     }
 
@@ -183,7 +183,7 @@ final class PlanViewModel: ObservableObject {
             isShowingSavedUnlockedPlan = false
             activeSignedTransactionInfo = signedTransactionInfo
             saveLatestUnlockedPlan(currentPlan)
-            PostHogSDK.shared.capture("plan_unlocked")
+            analytics.capture("plan_unlocked")
             return true
         } catch {
             isUnlocked = false
@@ -218,7 +218,7 @@ final class PlanViewModel: ObservableObject {
         isShowingSavedUnlockedPlan = false
         regenerationAttempt = 0
         errorMessage = nil
-        PostHogSDK.shared.capture("new_date_started")
+        analytics.capture("new_date_started")
     }
 
     func returnToSavedUnlockedPlan() {
@@ -227,7 +227,7 @@ final class PlanViewModel: ObservableObject {
         isUnlocked = true
         isShowingSavedUnlockedPlan = true
         errorMessage = nil
-        PostHogSDK.shared.capture("previous_plan_restored")
+        analytics.capture("previous_plan_restored")
     }
 
     func setPlanningArea(label: String, countryCode: String) {
@@ -245,7 +245,7 @@ final class PlanViewModel: ObservableObject {
         let signedTransactionInfo = activeSignedTransactionInfo
         let previousPlanID = currentPlan?.id
         incrementRegenerationAttempt()
-        PostHogSDK.shared.capture("unlocked_plan_regenerated", properties: ["regeneration_attempt": regenerationAttempt])
+        analytics.capture("unlocked_plan_regenerated", properties: ["regeneration_attempt": regenerationAttempt])
         await generatePreview()
         if currentPlan?.id != previousPlanID, !isUnlocked {
             await unlockCurrentPlan(signedTransactionInfo: signedTransactionInfo)
@@ -254,13 +254,13 @@ final class PlanViewModel: ObservableObject {
 
     func regeneratePreview() async {
         incrementRegenerationAttempt()
-        PostHogSDK.shared.capture("plan_preview_regenerated", properties: ["regeneration_attempt": regenerationAttempt])
+        analytics.capture("plan_preview_regenerated", properties: ["regeneration_attempt": regenerationAttempt])
         await generatePreview()
     }
 
     func acceptAIDisclosure() {
         hasAcceptedAIDisclosure = true
-        PostHogSDK.shared.capture("ai_consent_accepted")
+        analytics.capture("ai_consent_accepted")
     }
 
     private func makeRequest() -> GeneratePlanRequest {

@@ -1,10 +1,20 @@
-import PostHog
 import SwiftUI
 
 struct UnlockedPlanView: View {
     @ObservedObject var viewModel: PlanViewModel
     let onPlanNewDate: () -> Void
+    private let analytics: any AnalyticsTracking
     @Environment(\.openURL) private var openURL
+
+    init(
+        viewModel: PlanViewModel,
+        analytics: any AnalyticsTracking = PostHogAnalytics.shared,
+        onPlanNewDate: @escaping () -> Void
+    ) {
+        self.viewModel = viewModel
+        self.analytics = analytics
+        self.onPlanNewDate = onPlanNewDate
+    }
 
     var body: some View {
         if let plan = viewModel.currentPlan, let lockedPlan = plan.lockedPlan {
@@ -62,7 +72,7 @@ struct UnlockedPlanView: View {
                                                 }
                                             }
                                             Button {
-                                                PostHogSDK.shared.capture("venue_opened_in_maps", properties: ["stop_order": stop.order])
+                                                analytics.capture("venue_opened_in_maps", properties: ["stop_order": stop.order])
                                                 openURL(appleMapsURL(for: stop))
                                             } label: {
                                                 Label("Open in Apple Maps", systemImage: "map")

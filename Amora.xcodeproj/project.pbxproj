@@ -343,8 +343,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
 			requirement = {
-				from = 3.67.0;
 				kind = upToNextMajorVersion;
+				minimumVersion = 3.67.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
