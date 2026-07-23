@@ -12,7 +12,7 @@
 - Typed planning-area suggestions should stay lightweight and optional; do not force map/radius selection in the MVP.
 - Product and marketing should warn against recycled/copy-pasted dates by making personalization the value.
 - AI data-use consent should appear as a one-time screen immediately after the opening loading screen and before the intake form, with reassuring copy that the shared context is used to make a thoughtful, specific plan.
-- Amora uses anonymous, EU-hosted PostHog analytics by default. It does not collect user-entered text, plans, location, payment proof, or data for cross-app tracking; App Store Connect remains the source for app performance, purchase, and subscription reporting.
+- Amora uses privacy-limited, EU-hosted PostHog analytics by default with a random, pseudonymous installation identifier. GeoIP enrichment and error autocapture are disabled, and person profiles, session replay, advertising identifiers, and cross-app tracking are not used. Analytics must not collect user-entered text, plans, location or planning area, Apple transaction identifiers, or payment proof; App Store Connect remains the source for app performance, purchase, and subscription reporting.
 - Current event discovery, Google Places, saved profiles, and accounts are out of scope for the MVP.
 - Intake defaults should allow drinking; users opt into the no-drinking constraint when needed.
 - The app saves the latest fully unlocked plan on-device for convenience; this does not promise recovery after app deletion or device changes.

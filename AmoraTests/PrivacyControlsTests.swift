@@ -29,7 +29,7 @@ final class PrivacyControlsTests: XCTestCase {
 
         XCTAssertFalse(
             source.contains("AnalyticsPrivacyToggle") || source.contains("Share app analytics"),
-            "The app should not expose an analytics toggle because anonymous analytics are enabled by default."
+            "The app should not expose an analytics toggle because privacy-limited analytics are enabled by default."
         )
     }
 
@@ -47,6 +47,9 @@ final class PrivacyControlsTests: XCTestCase {
         )
 
         XCTAssertFalse(appSource.contains("errorTrackingConfig.autoCapture = true"))
+        XCTAssertTrue(appSource.contains("config.captureApplicationLifecycleEvents = false"))
+        XCTAssertTrue(appSource.contains("config.captureScreenViews = false"))
+        XCTAssertTrue(appSource.contains("config.sessionReplay = false"))
         XCTAssertTrue(appSource.contains("config.personProfiles = .never"))
         XCTAssertFalse(purchaseSource.contains("PostHogSDK.shared.identify"))
         XCTAssertFalse(purchaseSource.contains("transaction.originalID"))

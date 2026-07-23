@@ -308,7 +308,7 @@ States:
 Acceptance:
 
 - Consent is understandable without legal knowledge.
-- Continue is never presented as accepting marketing or analytics; the app collects neither for the MVP.
+- Continue accepts the AI data-use disclosure only; it is not presented as consent to marketing or analytics. The app's default, privacy-limited product analytics are disclosed in the Privacy Policy.
 
 ### 9.3 Personal anchor — Step 1 of 2
 

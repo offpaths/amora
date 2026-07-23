@@ -8,6 +8,8 @@
 - Confirm StoreKit product ids match the app: `amora_plus_monthly`.
 - Confirm subscription display name, description, duration, and price match in-app paywall copy.
 - Complete App Store Connect App Privacy labels for planning area/location, user content, purchases, and support contact data.
+- Declare non-linked Product Interaction and Other Usage Data for analytics, with tracking set to No.
+- Confirm the live Privacy Policy describes PostHog Cloud EU, the random installation identifier and technical metadata, excluded content, and disabled GeoIP enrichment and error autocapture.
 - Add the public Privacy Policy, Terms of Use, and Support URLs in App Store Connect metadata.
 - Confirm the app icon is present in `Amora/Assets.xcassets/AppIcon.appiconset`.
 - Confirm the archive uses `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`.
