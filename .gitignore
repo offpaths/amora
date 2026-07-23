@@ -5,3 +5,4 @@ worker/.wrangler/
 worker/node_modules/
 worker/.dev.vars
 Amora.xcodeproj/project.xcworkspace/xcuserdata/
+.env

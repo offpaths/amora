@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import PostHog
 import StoreKit
 
 @MainActor
@@ -62,6 +63,7 @@ final class PurchaseService: ObservableObject {
     func refreshSubscriptionStatus() async {
         var isActive = false
         var activeSignedTransactionInfo: String?
+        var subscriptionOriginalID: UInt64?
 
         for await entitlement in Transaction.currentEntitlements {
             guard case .verified(let transaction) = entitlement else {
@@ -71,12 +73,23 @@ final class PurchaseService: ObservableObject {
             if transaction.productID == AppConfig.plusMonthlyProductID {
                 isActive = true
                 activeSignedTransactionInfo = entitlement.jwsRepresentation
+                subscriptionOriginalID = transaction.originalID
                 break
             }
         }
 
         hasActiveSubscription = isActive
         self.activeSignedTransactionInfo = activeSignedTransactionInfo
+
+        if isActive, let originalID = subscriptionOriginalID {
+            PostHogSDK.shared.identify(
+                "storekit-\(originalID)",
+                userProperties: [
+                    "subscription_status": "active",
+                    "subscription_product_id": AppConfig.plusMonthlyProductID
+                ]
+            )
+        }
     }
 
     func restorePurchases() async {
@@ -90,6 +103,7 @@ final class PurchaseService: ObservableObject {
         }
 
         await refreshSubscriptionStatus()
+        PostHogSDK.shared.capture("purchases_restored", properties: ["success": hasActiveSubscription])
         if !hasActiveSubscription {
             purchaseMessage = "No active Amora Plus subscription was found. Try the Apple Account used for the purchase."
         } else {
@@ -103,18 +117,22 @@ final class PurchaseService: ObservableObject {
             if case .success(let verification) = result, case .verified(let transaction) = verification {
                 await transaction.finish()
                 purchaseMessage = nil
+                PostHogSDK.shared.capture("subscription_purchased")
                 return true
             }
             if case .userCancelled = result {
                 purchaseMessage = "Purchase cancelled. Your preview is still here when you are ready."
+                PostHogSDK.shared.capture("subscription_purchase_cancelled")
             } else if case .pending = result {
                 purchaseMessage = "Your purchase is waiting for approval. We will unlock the plan once Apple confirms it."
             } else {
                 purchaseMessage = "We could not verify that purchase. Try restoring your purchases."
+                PostHogSDK.shared.capture("subscription_purchase_failed")
             }
             return false
         } catch {
             purchaseMessage = "We could not start the purchase. Check your connection and try again."
+            PostHogSDK.shared.capture("subscription_purchase_failed")
             return false
         }
     }

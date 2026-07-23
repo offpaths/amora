@@ -1,5 +1,6 @@
-import SwiftUI
+import PostHog
 import StoreKit
+import SwiftUI
 
 struct PaywallView: View {
     @ObservedObject var purchaseService: PurchaseService
@@ -44,6 +45,7 @@ struct PaywallView: View {
 
                     PrimaryButton(title: primaryButtonTitle, isLoading: isPreparingPurchase) {
                         Task {
+                            PostHogSDK.shared.capture("subscription_purchase_started")
                             onPurchaseStarted("subscription")
                             let success = await purchaseService.purchasePlusMonthly()
                             onPurchased(success)

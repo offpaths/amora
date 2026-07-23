@@ -1,3 +1,4 @@
+import PostHog
 import SwiftUI
 
 enum ContentRoute: Equatable {
@@ -76,6 +77,7 @@ struct ContentView: View {
             } else {
                 PreviewPlanView(viewModel: viewModel) {
                     showingPaywall = true
+                    PostHogSDK.shared.capture("paywall_opened")
                 } onEditPreferences: {
                     isEditingPreferences = true
                 }
