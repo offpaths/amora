@@ -560,7 +560,7 @@ describe("POST /unlock-plan", () => {
 });
 
 describe("POST /telemetry", () => {
-  it("returns not found because analytics collection is removed", async () => {
+  it("returns not found because backend telemetry remains disabled", async () => {
     const response = await worker.fetch(
       new Request("http://localhost/telemetry", {
         method: "POST",

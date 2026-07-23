@@ -225,6 +225,18 @@ final class PlanViewModelTests: XCTestCase {
         XCTAssertEqual(analytics.events[0].properties["error_type"] as? String, "offline")
     }
 
+    func testPostHogAdapterDisablesGeoIPForEveryEvent() {
+        var capturedProperties: [String: Any] = [:]
+        let analytics = PostHogAnalytics { _, properties in
+            capturedProperties = properties
+        }
+
+        analytics.capture("test_event", properties: ["result": "success"])
+
+        XCTAssertEqual(capturedProperties["result"] as? String, "success")
+        XCTAssertEqual(capturedProperties["$geoip_disable"] as? Bool, true)
+    }
+
     func testSubscriptionPurchaseUnlocksCurrentPlanThroughBackend() async {
         var unlockCalls: [(planToken: String, signedTransactionInfo: String)] = []
         let viewModel = PlanViewModel(

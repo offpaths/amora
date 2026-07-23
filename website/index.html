@@ -106,14 +106,15 @@
         <div class="wrap grid two">
           <div>
             <h2>Clear about AI and privacy.</h2>
-            <p class="lead">Amora explains what is sent for generation before the intake form and does not collect in-app analytics.</p>
+            <p class="lead">Amora uses privacy-limited, EU-hosted product analytics to understand whether the core planning and subscription flows work. It does not send your personal context, generated plans, planning area, or payment proof to analytics.</p>
           </div>
           <div class="panel">
             <ul class="check-list">
               <li>Planning area, preferences, and personal context are sent to the AI provider to generate a date plan.</li>
-              <li>Location detection is optional; users can type a planning area instead.</li>
-              <li>Amora uses the planning area you provide, not raw latitude or longitude.</li>
-              <li>App performance, purchase, and subscription reporting come from App Store Connect.</li>
+              <li>Location detection is optional; Amora uses area labels, not raw latitude or longitude.</li>
+              <li>PostHog receives selected funnel events, a random installation identifier, and standard technical metadata such as app version, OS version, device type, and locale.</li>
+              <li>GeoIP enrichment, error autocapture, session replay, person profiles, advertising identifiers, and cross-app tracking are not used.</li>
+              <li>App Store Connect remains the source for app performance, purchase, and subscription reporting.</li>
               <li>Amora does not sell personal information.</li>
             </ul>
           </div>

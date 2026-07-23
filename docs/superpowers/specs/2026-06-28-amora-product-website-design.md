@@ -3,6 +3,8 @@
 Date: 2026-06-28
 Status: Approved
 
+Historical note: The analytics statement in this design record was superseded on 2026-07-23 by the product decision in `AGENTS.md`; this document is retained as a record of the original website design.
+
 ## Goal
 
 Create a public website for Amora at `planwithamora.com` that explains the product, publishes the legal/support pages required for App Review, and gives reviewers or collaborators one place to reference the app's product behavior, purchase products, data-use limits, and test flow.
